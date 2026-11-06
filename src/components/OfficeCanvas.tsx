@@ -170,3 +170,4 @@ export const OfficeCanvas: React.FC<OfficeCanvasProps> = ({
     </div>
   );
 };
+
