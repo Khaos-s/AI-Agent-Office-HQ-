@@ -5,6 +5,9 @@ import {
   getAllAgents,
   getAgentById,
   updateAgentStatus,
+  routeAgent,
+  getCampusStats,
+  resetAgentState,
 } from "@/lib/agent-registry";
 import {
   getMemories,
@@ -18,40 +21,60 @@ import {
   resetApprovalsStore,
 } from "@/lib/approvals-store";
 
-describe("Agent Registry", () => {
-  it("registers all 9 specialized departments", () => {
+describe("Agent Registry & Campus Roster", () => {
+  beforeEach(() => {
+    resetAgentState();
+  });
+
+  it("registers all 24 agents across campus rooms", () => {
     const agents = getAllAgents();
-    expect(agents.length).toBe(9);
+    expect(agents.length).toBe(24);
     const ids = agents.map((a) => a.id);
-    expect(ids).toContain("lead");
-    expect(ids).toContain("research");
-    expect(ids).toContain("scripts");
-    expect(ids).toContain("social");
-    expect(ids).toContain("analytics");
-    expect(ids).toContain("tbx-shop");
-    expect(ids).toContain("dev");
-    expect(ids).toContain("inbox");
-    expect(ids).toContain("creative");
+    expect(ids).toContain("josiah");
+    expect(ids).toContain("gian");
+    expect(ids).toContain("julian");
+    expect(ids).toContain("arwin");
+    expect(ids).toContain("blaze");
+    expect(ids).toContain("roy-jhan");
   });
 
   it("enforces strict guardrails per department", () => {
-    const dev = getAgentById("dev");
+    const dev = getAgentById("blaze");
     expect(dev).toBeDefined();
     expect(dev?.disallowedTools).toContain("git_push_main");
     expect(dev?.brief.mustNeverDo).toContain("main");
 
-    const shop = getAgentById("tbx-shop");
+    const shop = getAgentById("gabriel");
     expect(shop?.disallowedTools).toContain("direct_refund");
     expect(shop?.brief.mustNeverDo).toContain("HITL");
   });
 
   it("updates agent status and task", () => {
-    const updated = updateAgentStatus("research", "working", "Scanning GitHub Radar");
+    const updated = updateAgentStatus("keiru", "working", "Scanning GitHub Radar");
     expect(updated.status).toBe("working");
     expect(updated.currentTask).toBe("Scanning GitHub Radar");
 
-    const fetched = getAgentById("research");
+    const fetched = getAgentById("keiru");
     expect(fetched?.status).toBe("working");
+  });
+
+  it("routes agents to rooms with A* target coordinates", () => {
+    const routed = routeAgent("josiah", "brain");
+    expect(routed.currentRoom).toBe("brain");
+    expect(routed.status).toBe("meeting");
+    expect(routed.targetCoordinates).toBeDefined();
+    expect(routed.targetCoordinates?.x).toBeGreaterThan(350);
+  });
+
+  it("calculates accurate campus stats matching live counter", () => {
+    const stats = getCampusStats(0);
+    expect(stats.total).toBe(24);
+    expect(stats.working).toBe(6);
+    expect(stats.eating).toBe(1);
+    expect(stats.gym).toBe(2);
+    expect(stats.meeting).toBe(3);
+    expect(stats.breakCount).toBe(12);
+    expect(stats.waitingApproval).toBe(0);
   });
 });
 
@@ -67,7 +90,7 @@ describe("Shared Brain (Memory Store)", () => {
     const newEntry = addMemory({
       agentId: "research",
       title: "New AI Framework Discovery",
-      content: "Discovered Pixel Agents v2 architecture.",
+      content: "Discovered Claw3D and OpenClaw architecture.",
       tags: ["ai-agents", "architecture"],
     });
 
@@ -95,7 +118,7 @@ describe("HITL Approvals Store", () => {
 
   it("manages pending approvals and enforces state machine transitions", () => {
     const item = createApproval({
-      agentId: "tbx-shop",
+      agentId: "gabriel",
       actionType: "shopify_refund",
       title: "Refund Order #1042",
       description: "Customer requested refund for damaged item.",
@@ -125,4 +148,3 @@ describe("HITL Approvals Store", () => {
     expect(approvals.length).toBeGreaterThan(0);
   });
 });
-

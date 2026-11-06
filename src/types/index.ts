@@ -1,4 +1,29 @@
-export type AgentStatus = "idle" | "thinking" | "working" | "awaiting_approval" | "error";
+export type CampusStatus =
+  | "working"
+  | "eating"
+  | "gym"
+  | "meeting"
+  | "break"
+  | "arriving"
+  | "waiting_approval"
+  | "awaiting_approval"
+  | "thinking"
+  | "error"
+  | "idle";
+
+export type AgentStatus = CampusStatus;
+
+export type RoomLocation =
+  | "overview"
+  | "focus_work"
+  | "all_hands"
+  | "pantry"
+  | "gym"
+  | "brain"
+  | "server_bay"
+  | "exterior";
+
+export type RoutingDestination = "desk" | "pantry" | "gym" | "brain";
 
 export type ModelTier = "opus" | "sonnet" | "haiku";
 
@@ -13,18 +38,24 @@ export interface AgentProfile {
   name: string;
   department: string;
   role: string;
+  shortRole?: string;
   modelTier: ModelTier;
-  deskCoordinates: {
-    x: number;
-    y: number;
-  };
   color: string;
+  avatarIcon?: string;
+  
+  // Spatial coordinates (2D and 3D compatible)
+  deskCoordinates: { x: number; y: number; z?: number };
+  currentCoordinates: { x: number; y: number; z?: number };
+  targetCoordinates?: { x: number; y: number; z?: number };
+  
+  currentRoom: RoomLocation;
+  status: CampusStatus;
+  currentTask: string;
+  speechBubble?: string;
+
   brief: AgentBrief;
   allowedTools: string[];
   disallowedTools: string[];
-  status: AgentStatus;
-  currentTask?: string;
-  speechBubble?: string;
 }
 
 export interface MemoryEntry {
@@ -69,3 +100,15 @@ export interface RadarItem {
   lastScannedAt: string;
 }
 
+export interface CampusStats {
+  total: number;
+  working: number;
+  eating: number;
+  gym: number;
+  meeting: number;
+  breakCount: number;
+  arriving: number;
+  waitingApproval: number;
+  openTasks: number;
+  accessories: number;
+}
