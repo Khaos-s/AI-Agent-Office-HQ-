@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getRadarData, runRadarScan } from "@/lib/radar-engine";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const radarItems = getRadarData();
   return NextResponse.json({

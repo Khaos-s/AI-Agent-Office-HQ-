@@ -3,107 +3,189 @@ import { AgentProfile, RoomLocation } from "@/types";
 export const CAMPUS_WIDTH = 960;
 export const CAMPUS_HEIGHT = 640;
 
-export interface CampusRoomBounds {
+export interface IsometricRoom {
+  id: string;
   name: string;
   type: RoomLocation;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
+  // Floor polygon in screen space
+  points: { x: number; y: number }[];
   floorColor: string;
+  floorColorAlt?: string;
   borderColor: string;
+  labelPoint: { x: number; y: number };
 }
 
-export const CAMPUS_ROOMS: CampusRoomBounds[] = [
-  // 1. Central Holographic Command (The Brain)
+// Room definitions matching the exact diamond layout of the screenshot
+export const ISOMETRIC_ROOMS: IsometricRoom[] = [
+  // 1. Focus Work Bay (Purple floor - Top Left / North-West)
   {
-    name: "The Brain // Command Orb",
-    type: "brain",
-    x: 320,
-    y: 200,
-    w: 160,
-    h: 150,
-    floorColor: "#050b14",
-    borderColor: "#06b6d4",
-  },
-  // 2. Focus Work Bay (Purple Room - Top Left)
-  {
+    id: "focus_work",
     name: "Focus Work Bay [SD / UX]",
     type: "focus_work",
-    x: 180,
-    y: 80,
-    w: 160,
-    h: 130,
+    points: [
+      { x: 370, y: 55 },
+      { x: 190, y: 155 },
+      { x: 300, y: 220 },
+      { x: 400, y: 150 },
+    ],
     floorColor: "#2e1065",
     borderColor: "#a855f7",
+    labelPoint: { x: 260, y: 95 },
   },
-  // 3. Server Bay & DBA (Deep Blue Room - Top Right)
+  // 2. Server Bay & DBA (Deep Blue floor - Top Right / North-East)
   {
+    id: "server_bay",
     name: "Server Bay [DB / SEC / IR]",
     type: "server_bay",
-    x: 380,
-    y: 60,
-    w: 180,
-    h: 140,
+    points: [
+      { x: 370, y: 55 },
+      { x: 400, y: 150 },
+      { x: 530, y: 220 },
+      { x: 675, y: 135 },
+    ],
     floorColor: "#0f172a",
     borderColor: "#3b82f6",
+    labelPoint: { x: 480, y: 90 },
   },
-  // 4. Green Engineering Bay (Mid Right)
+  // 3. Central Holographic Brain (Center / Black Cyber Dais)
   {
-    name: "Engineering Bay [Dev]",
+    id: "brain",
+    name: "The Brain // Command Orb",
+    type: "brain",
+    points: [
+      { x: 400, y: 200 },
+      { x: 460, y: 245 },
+      { x: 460, y: 310 },
+      { x: 400, y: 350 },
+      { x: 340, y: 310 },
+      { x: 340, y: 245 },
+    ],
+    floorColor: "#050b14",
+    borderColor: "#06b6d4",
+    labelPoint: { x: 400, y: 220 },
+  },
+  // 4. Engineering Bay (Green floor - Mid Right / East)
+  {
+    id: "engineering",
+    name: "Engineering Bay [Dev Lead]",
     type: "focus_work",
-    x: 480,
-    y: 180,
-    w: 170,
-    h: 130,
+    points: [
+      { x: 530, y: 220 },
+      { x: 460, y: 275 },
+      { x: 545, y: 335 },
+      { x: 675, y: 245 },
+    ],
     floorColor: "#052e16",
     borderColor: "#22c55e",
+    labelPoint: { x: 570, y: 250 },
   },
-  // 5. Pantry & Canteen (Orange Room - Mid Left)
+  // 5. Workstations & Review Bay (Magenta floor - Bottom Right / South-East)
   {
-    name: "Pantry & Canteen // All Hands",
-    type: "pantry",
-    x: 40,
-    y: 220,
-    w: 150,
-    h: 150,
-    floorColor: "#7c2d12",
-    borderColor: "#f97316",
-  },
-  // 6. Rec & Gym (Red / Pink Room - Bottom Left)
-  {
-    name: "Rec & Gym // Recovery",
-    type: "gym",
-    x: 180,
-    y: 330,
-    w: 150,
-    h: 140,
-    floorColor: "#831843",
-    borderColor: "#f43f5e",
-  },
-  // 7. Magenta Workstation Bay (Bottom Right)
-  {
+    id: "workstations",
     name: "Workstations & Review Bay",
     type: "focus_work",
-    x: 480,
-    y: 330,
-    w: 170,
-    h: 130,
-    floorColor: "#701a75",
+    points: [
+      { x: 460, y: 310 },
+      { x: 545, y: 335 },
+      { x: 675, y: 245 },
+      { x: 675, y: 350 },
+      { x: 485, y: 460 },
+      { x: 420, y: 410 },
+    ],
+    floorColor: "#4a044e",
     borderColor: "#d946ef",
+    labelPoint: { x: 560, y: 380 },
   },
-  // 8. Cyan Workstation Bay (Bottom Center)
+  // 6. Pantry & Canteen (Warm Orange floor - Mid Left / West)
   {
+    id: "pantry",
+    name: "Pantry & Canteen // All Hands",
+    type: "pantry",
+    points: [
+      { x: 190, y: 155 },
+      { x: 45, y: 240 },
+      { x: 175, y: 345 },
+      { x: 300, y: 220 },
+    ],
+    floorColor: "#7c2d12",
+    borderColor: "#f97316",
+    labelPoint: { x: 130, y: 235 },
+  },
+  // 7. Rec & Gym (Bright Red/Pink floor - Bottom Left / South-West)
+  {
+    id: "gym",
+    name: "Rec & Gym // Recovery",
+    type: "gym",
+    points: [
+      { x: 175, y: 345 },
+      { x: 45, y: 420 },
+      { x: 280, y: 480 },
+      { x: 340, y: 350 },
+    ],
+    floorColor: "#831843",
+    borderColor: "#f43f5e",
+    labelPoint: { x: 210, y: 420 },
+  },
+  // 8. Operations Bay (Teal floor - Bottom Center)
+  {
+    id: "operations",
     name: "Operations & Support Bay",
     type: "focus_work",
-    x: 340,
-    y: 360,
-    w: 130,
-    h: 110,
+    points: [
+      { x: 340, y: 350 },
+      { x: 420, y: 410 },
+      { x: 375, y: 490 },
+      { x: 280, y: 480 },
+    ],
     floorColor: "#083344",
     borderColor: "#06b6d4",
+    labelPoint: { x: 350, y: 440 },
   },
 ];
+
+// Desk positions for rendering isometric workstations
+export interface IsometricDesk {
+  x: number;
+  y: number;
+  rotation: "left" | "right";
+  hasMonitors: boolean;
+}
+
+export const CAMPUS_DESKS: IsometricDesk[] = [
+  // Focus Work (Purple)
+  { x: 260, y: 165, rotation: "left", hasMonitors: true },
+  { x: 310, y: 135, rotation: "left", hasMonitors: true },
+  { x: 320, y: 185, rotation: "left", hasMonitors: true },
+
+  // Server Bay (Blue)
+  { x: 480, y: 130, rotation: "right", hasMonitors: true },
+  { x: 450, y: 165, rotation: "right", hasMonitors: true },
+  { x: 500, y: 195, rotation: "right", hasMonitors: true },
+  { x: 560, y: 165, rotation: "right", hasMonitors: true },
+
+  // Engineering Bay (Green)
+  { x: 550, y: 205, rotation: "right", hasMonitors: true },
+  { x: 590, y: 235, rotation: "right", hasMonitors: true },
+  { x: 620, y: 275, rotation: "right", hasMonitors: true },
+
+  // Workstations Bay (Magenta)
+  { x: 550, y: 350, rotation: "right", hasMonitors: true },
+  { x: 590, y: 380, rotation: "right", hasMonitors: true },
+  { x: 520, y: 390, rotation: "right", hasMonitors: true },
+
+  // Operations Bay (Teal)
+  { x: 440, y: 420, rotation: "left", hasMonitors: true },
+  { x: 470, y: 420, rotation: "left", hasMonitors: true },
+  { x: 500, y: 420, rotation: "left", hasMonitors: true },
+];
+
+export interface RippleEffect {
+  x: number;
+  y: number;
+  radius: number;
+  maxRadius: number;
+  opacity: number;
+}
 
 export function getAgentAtIsometricCoords(
   x: number,
@@ -121,6 +203,34 @@ export function getAgentAtIsometricCoords(
   return null;
 }
 
+export function getRoomAtIsometricCoords(x: number, y: number): IsometricRoom | null {
+  for (const room of ISOMETRIC_ROOMS) {
+    if (isPointInPolygon({ x, y }, room.points)) {
+      return room;
+    }
+  }
+  return null;
+}
+
+function isPointInPolygon(
+  point: { x: number; y: number },
+  vs: { x: number; y: number }[]
+): boolean {
+  let inside = false;
+  for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+    const xi = vs[i].x;
+    const yi = vs[i].y;
+    const xj = vs[j].x;
+    const yj = vs[j].y;
+
+    const intersect =
+      yi > point.y !== yj > point.y &&
+      point.x < ((xj - xi) * (point.y - yi)) / (yj - yi) + xi;
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
 export function renderIsometricCampus(
   ctx: CanvasRenderingContext2D,
   agents: AgentProfile[],
@@ -128,7 +238,8 @@ export function renderIsometricCampus(
   hoveredAgentId: string | null,
   tick: number,
   cameraZoom = 1,
-  cameraPan = { x: 0, y: 0 }
+  cameraPan = { x: 0, y: 0 },
+  activeRipples: RippleEffect[] = []
 ): void {
   ctx.save();
   ctx.clearRect(0, 0, CAMPUS_WIDTH, CAMPUS_HEIGHT);
@@ -138,25 +249,36 @@ export function renderIsometricCampus(
   ctx.scale(cameraZoom, cameraZoom);
   ctx.translate(-CAMPUS_WIDTH / 2, -CAMPUS_HEIGHT / 2);
 
-  // 1. Draw Exterior & Surroundings (Grass Lawn & Road)
-  drawExteriorLawnAndRoad(ctx);
+  // 1. Draw Exterior & Surroundings (Lush dark lawn, road, crossing, trees)
+  drawExteriorLawnAndRoad(ctx, tick);
 
-  // 2. Draw Building Perimeter and Floor Base
+  // 2. Draw Building Envelope & Foundation
   drawBuildingEnvelope(ctx);
 
-  // 3. Draw All Department Rooms
-  for (const room of CAMPUS_ROOMS) {
-    drawCampusRoom(ctx, room, tick);
+  // 3. Draw All Room Floors
+  for (const room of ISOMETRIC_ROOMS) {
+    drawRoomFloor(ctx, room, tick);
   }
 
-  // 4. Draw Central Holographic Brain Command Center
+  // 4. Draw Central Holographic Brain Platform & Rotating Orb
   drawCentralHolographicBrain(ctx, tick);
 
-  // 5. Draw Furniture (Server racks, desks, gym equipment, canteen tables)
+  // 5. Draw Isometric Interior Walls & Partitions
+  drawIsometricWalls(ctx);
+
+  // 6. Draw Furniture (desks with glowing dual monitors, server racks, treadmills, mats, tables)
   drawCampusFurniture(ctx, tick);
 
-  // 6. Draw Animated Agents with Name Tags
-  for (const agent of agents) {
+  // 7. Draw Click Ripples
+  drawClickRipples(ctx, activeRipples);
+
+  // 8. Draw Animated Agents & Floating Name Tags
+  // Sort agents by Y coordinate for correct isometric depth layering
+  const sortedAgents = [...agents].sort(
+    (a, b) => a.currentCoordinates.y - b.currentCoordinates.y
+  );
+
+  for (const agent of sortedAgents) {
     drawAgentSprite(
       ctx,
       agent,
@@ -169,107 +291,243 @@ export function renderIsometricCampus(
   ctx.restore();
 }
 
-function drawExteriorLawnAndRoad(ctx: CanvasRenderingContext2D): void {
-  // Dark lush green campus lawn
-  ctx.fillStyle = "#064e3b";
-  ctx.fillRect(-200, -200, CAMPUS_WIDTH + 400, CAMPUS_HEIGHT + 400);
+function drawExteriorLawnAndRoad(ctx: CanvasRenderingContext2D, tick: number): void {
+  // Dark lush teal lawn
+  ctx.fillStyle = "#022c22";
+  ctx.fillRect(-300, -300, CAMPUS_WIDTH + 600, CAMPUS_HEIGHT + 600);
 
-  // Trees outside the building
-  const treePositions = [
-    { x: 100, y: 40 },
-    { x: 300, y: 30 },
-    { x: 600, y: 40 },
-    { x: 740, y: 70 },
-    { x: 800, y: 220 },
-    { x: 780, y: 380 },
-    { x: 40, y: 120 },
-    { x: 30, y: 420 },
+  // Subtle grid texture on ground
+  ctx.strokeStyle = "rgba(4, 120, 87, 0.12)";
+  ctx.lineWidth = 1;
+  const gridSize = 30;
+  for (let x = -300; x < CAMPUS_WIDTH + 300; x += gridSize) {
+    ctx.beginPath();
+    ctx.moveTo(x, -300);
+    ctx.lineTo(x, CAMPUS_HEIGHT + 300);
+    ctx.stroke();
+  }
+  for (let y = -300; y < CAMPUS_HEIGHT + 300; y += gridSize) {
+    ctx.beginPath();
+    ctx.moveTo(-300, y);
+    ctx.lineTo(CAMPUS_WIDTH + 300, y);
+    ctx.stroke();
+  }
+
+  // Stylized Isometric Trees
+  const trees = [
+    { x: 300, y: 110, size: 26 },
+    { x: 580, y: 110, size: 26 },
+    { x: 740, y: 170, size: 28 },
+    { x: 780, y: 310, size: 28 },
+    { x: 60, y: 160, size: 26 },
+    { x: 35, y: 350, size: 28 },
+    { x: 45, y: 480, size: 26 },
   ];
 
-  for (const t of treePositions) {
-    // Tree Shadow
-    ctx.fillStyle = "rgba(0,0,0,0.3)";
+  for (const tree of trees) {
+    // Tree ground shadow
+    ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
     ctx.beginPath();
-    ctx.arc(t.x + 3, t.y + 4, 18, 0, Math.PI * 2);
+    ctx.ellipse(tree.x + 4, tree.y + 8, tree.size * 0.8, tree.size * 0.4, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Tree Foliage
+    // Tree trunk
+    ctx.fillStyle = "#78350f";
+    ctx.fillRect(tree.x - 3, tree.y - 4, 6, 12);
+
+    // Tree foliage - tiered emerald spheres
     ctx.fillStyle = "#047857";
     ctx.beginPath();
-    ctx.arc(t.x, t.y, 16, 0, Math.PI * 2);
+    ctx.arc(tree.x, tree.y - 12, tree.size * 0.75, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#059669";
+    ctx.beginPath();
+    ctx.arc(tree.x - 2, tree.y - 16, tree.size * 0.6, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.fillStyle = "#10b981";
     ctx.beginPath();
-    ctx.arc(t.x - 3, t.y - 3, 11, 0, Math.PI * 2);
+    ctx.arc(tree.x - 4, tree.y - 20, tree.size * 0.45, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  // Asphalt road at bottom front
+  // Asphalt road running along the bottom-left isometric edge
+  ctx.save();
+  // Draw diagonal road polygon
   ctx.fillStyle = "#18181b";
-  ctx.fillRect(-200, 500, CAMPUS_WIDTH + 400, 140);
+  ctx.beginPath();
+  ctx.moveTo(-100, 380);
+  ctx.lineTo(340, 680);
+  ctx.lineTo(260, 720);
+  ctx.lineTo(-180, 420);
+  ctx.closePath();
+  ctx.fill();
 
   // Road curb
-  ctx.fillStyle = "#71717a";
-  ctx.fillRect(-200, 496, CAMPUS_WIDTH + 400, 4);
+  ctx.strokeStyle = "#52525b";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(-100, 380);
+  ctx.lineTo(340, 680);
+  ctx.stroke();
 
-  // Yellow road centerline
+  // Yellow dashed road centerline
   ctx.strokeStyle = "#eab308";
   ctx.lineWidth = 3;
-  ctx.setLineDash([20, 15]);
+  ctx.setLineDash([16, 12]);
   ctx.beginPath();
-  ctx.moveTo(-200, 560);
-  ctx.lineTo(CAMPUS_WIDTH + 200, 560);
+  ctx.moveTo(-140, 400);
+  ctx.lineTo(300, 700);
   ctx.stroke();
   ctx.setLineDash([]);
 
-  // White zebra pedestrian crossing
+  // White zebra pedestrian crossing stripes
   ctx.fillStyle = "#f4f4f5";
-  for (let z = 0; z < 6; z++) {
-    ctx.fillRect(160 + z * 18, 510, 10, 80);
+  for (let z = 0; z < 7; z++) {
+    const ox = 110 + z * 16;
+    const oy = 525 + z * 11;
+    ctx.beginPath();
+    ctx.moveTo(ox, oy);
+    ctx.lineTo(ox - 30, oy + 20);
+    ctx.lineTo(ox - 22, oy + 26);
+    ctx.lineTo(ox + 8, oy + 6);
+    ctx.closePath();
+    ctx.fill();
   }
+
+  ctx.restore();
 }
 
 function drawBuildingEnvelope(ctx: CanvasRenderingContext2D): void {
-  // Building Shadow
-  ctx.fillStyle = "rgba(0,0,0,0.45)";
-  ctx.fillRect(25, 45, 680, 440);
+  // Ground shadow of entire building
+  ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
+  ctx.beginPath();
+  ctx.moveTo(370, 75);
+  ctx.lineTo(690, 255);
+  ctx.lineTo(495, 475);
+  ctx.lineTo(365, 505);
+  ctx.lineTo(35, 435);
+  ctx.lineTo(35, 255);
+  ctx.closePath();
+  ctx.fill();
 
-  // Main floor foundation
-  ctx.fillStyle = "#090d16";
-  ctx.fillRect(20, 40, 670, 440);
-
-  // Outer structural concrete walls
-  ctx.strokeStyle = "#1e293b";
-  ctx.lineWidth = 8;
-  ctx.strokeRect(20, 40, 670, 440);
-
-  ctx.strokeStyle = "#334155";
-  ctx.lineWidth = 2;
-  ctx.strokeRect(16, 36, 678, 448);
+  // Base concrete foundation
+  ctx.fillStyle = "#020617";
+  ctx.beginPath();
+  ctx.moveTo(370, 50);
+  ctx.lineTo(680, 240);
+  ctx.lineTo(485, 465);
+  ctx.lineTo(355, 495);
+  ctx.lineTo(40, 425);
+  ctx.lineTo(40, 235);
+  ctx.closePath();
+  ctx.fill();
 }
 
-function drawCampusRoom(
+function drawRoomFloor(
   ctx: CanvasRenderingContext2D,
-  room: CampusRoomBounds,
+  room: IsometricRoom,
   tick: number
 ): void {
-  // Room floor
+  const pts = room.points;
+  if (pts.length < 3) return;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length; i++) {
+    ctx.lineTo(pts[i].x, pts[i].y);
+  }
+  ctx.closePath();
+
+  // Floor fill
   ctx.fillStyle = room.floorColor;
-  ctx.fillRect(room.x, room.y, room.w, room.h);
+  ctx.fill();
 
-  // Interior partition walls
-  ctx.strokeStyle = room.borderColor;
-  ctx.lineWidth = 2;
-  ctx.strokeRect(room.x, room.y, room.w, room.h);
+  // Subtle isometric tile line accents
+  ctx.strokeStyle = `${room.borderColor}33`;
+  ctx.lineWidth = 1;
+  ctx.stroke();
 
-  // Top header tab with room label
-  ctx.fillStyle = `${room.borderColor}33`;
-  ctx.fillRect(room.x, room.y, room.w, 14);
+  // Highlight border
+  ctx.strokeStyle = `${room.borderColor}99`;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
 
-  ctx.fillStyle = "#f8fafc";
-  ctx.font = "bold 8.5px monospace";
-  ctx.fillText(room.name.toUpperCase(), room.x + 5, room.y + 10);
+  ctx.restore();
+}
+
+function drawIsometricWalls(ctx: CanvasRenderingContext2D): void {
+  const wallHeight = 24;
+
+  // Exterior wall segments with 3D height
+  const outerSegments = [
+    // Top-Left exterior wall
+    { from: { x: 370, y: 55 }, to: { x: 45, y: 240 } },
+    // Top-Right exterior wall
+    { from: { x: 370, y: 55 }, to: { x: 675, y: 135 } },
+    { from: { x: 675, y: 135 }, to: { x: 675, y: 350 } },
+    // Bottom-Left exterior wall
+    { from: { x: 45, y: 240 }, to: { x: 45, y: 420 } },
+    { from: { x: 45, y: 420 }, to: { x: 280, y: 480 } },
+    // Bottom-Right exterior wall
+    { from: { x: 675, y: 350 }, to: { x: 485, y: 460 } },
+    { from: { x: 485, y: 460 }, to: { x: 375, y: 490 } },
+    { from: { x: 375, y: 490 }, to: { x: 280, y: 480 } },
+  ];
+
+  ctx.save();
+  for (const seg of outerSegments) {
+    // Wall side panel
+    ctx.fillStyle = "#0f172a";
+    ctx.beginPath();
+    ctx.moveTo(seg.from.x, seg.from.y);
+    ctx.lineTo(seg.to.x, seg.to.y);
+    ctx.lineTo(seg.to.x, seg.to.y - wallHeight);
+    ctx.lineTo(seg.from.x, seg.from.y - wallHeight);
+    ctx.closePath();
+    ctx.fill();
+
+    // Wall cap
+    ctx.strokeStyle = "#334155";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(seg.from.x, seg.from.y - wallHeight);
+    ctx.lineTo(seg.to.x, seg.to.y - wallHeight);
+    ctx.stroke();
+  }
+
+  // Interior partition walls with glass tint
+  const interiorWalls = [
+    // Divider between Purple and Blue rooms
+    { from: { x: 370, y: 55 }, to: { x: 400, y: 150 } },
+    // Divider along pantry
+    { from: { x: 190, y: 155 }, to: { x: 300, y: 220 } },
+    // Divider along server bay
+    { from: { x: 400, y: 150 }, to: { x: 530, y: 220 } },
+    // Divider between Gym and Operations
+    { from: { x: 280, y: 480 }, to: { x: 340, y: 350 } },
+    // Divider between Operations and Workstations
+    { from: { x: 375, y: 490 }, to: { x: 420, y: 410 } },
+  ];
+
+  ctx.fillStyle = "rgba(15, 23, 42, 0.75)";
+  ctx.strokeStyle = "rgba(56, 189, 248, 0.35)";
+  ctx.lineWidth = 1.5;
+
+  for (const wall of interiorWalls) {
+    ctx.beginPath();
+    ctx.moveTo(wall.from.x, wall.from.y);
+    ctx.lineTo(wall.to.x, wall.to.y);
+    ctx.lineTo(wall.to.x, wall.to.y - 18);
+    ctx.lineTo(wall.from.x, wall.from.y - 18);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  ctx.restore();
 }
 
 function drawCentralHolographicBrain(
@@ -279,128 +537,225 @@ function drawCentralHolographicBrain(
   const cx = 400;
   const cy = 275;
 
-  // Outer cyan cyber circle
+  ctx.save();
+
+  // 1. Central Cyber Dais Platform (Dark Blue / Black Circle)
+  ctx.fillStyle = "#030712";
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, 75, 46, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 2. Outer glowing cyan circular border
   ctx.strokeStyle = "#06b6d4";
   ctx.lineWidth = 2.5;
   ctx.beginPath();
-  ctx.arc(cx, cy, 65, 0, Math.PI * 2);
+  ctx.ellipse(cx, cy, 75, 46, 0, 0, Math.PI * 2);
   ctx.stroke();
 
-  // Pulsing holographic energy ring
-  const pulse = Math.sin(tick * 0.08) * 4;
-  ctx.strokeStyle = `rgba(6, 182, 212, ${0.4 + Math.sin(tick * 0.05) * 0.2})`;
+  // Concentric pulsing cyan energy rings
+  const pulse = Math.sin(tick * 0.08) * 3;
+  ctx.strokeStyle = `rgba(56, 189, 248, ${0.45 + Math.sin(tick * 0.05) * 0.25})`;
   ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.arc(cx, cy, 55 + pulse, 0, Math.PI * 2);
+  ctx.ellipse(cx, cy, 62 + pulse, 38 + pulse * 0.6, 0, 0, Math.PI * 2);
   ctx.stroke();
 
-  // Rotating holographic particle rings (The Brain)
-  ctx.save();
-  ctx.translate(cx, cy);
-  ctx.rotate(tick * 0.03);
+  // Inner ring with rotating tick markers
+  ctx.strokeStyle = "rgba(6, 182, 212, 0.35)";
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, 46, 28, 0, 0, Math.PI * 2);
+  ctx.stroke();
 
-  // Concentric ellipses to mimic 3D sphere
+  // Circular meeting desk around the orb
+  ctx.strokeStyle = "#1e293b";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, 54, 33, 0, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // 3. Central Holographic Rotating Sphere (Wireframe Orb)
+  const orbY = cy - 14;
+  ctx.translate(cx, orbY);
+
+  // Rotating outer energy rings
+  const rot = tick * 0.035;
   ctx.strokeStyle = "#38bdf8";
   ctx.lineWidth = 1.5;
+
   ctx.beginPath();
-  ctx.ellipse(0, 0, 22, 10, tick * 0.05, 0, Math.PI * 2);
+  ctx.ellipse(0, 0, 24, 12, rot, 0, Math.PI * 2);
   ctx.stroke();
 
   ctx.strokeStyle = "#06b6d4";
   ctx.beginPath();
-  ctx.ellipse(0, 0, 14, 22, -tick * 0.04, 0, Math.PI * 2);
+  ctx.ellipse(0, 0, 15, 24, -rot * 0.8, 0, Math.PI * 2);
   ctx.stroke();
 
-  // Glowing center nucleus
-  ctx.fillStyle = "#ffffff";
+  ctx.strokeStyle = "#67e8f9";
   ctx.beginPath();
-  ctx.arc(0, 0, 5, 0, Math.PI * 2);
+  ctx.ellipse(0, 0, 20, 18, rot * 1.2, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Glowing white nuclear core
+  const coreGlow = ctx.createRadialGradient(0, 0, 2, 0, 0, 14);
+  coreGlow.addColorStop(0, "#ffffff");
+  coreGlow.addColorStop(0.4, "#38bdf8");
+  coreGlow.addColorStop(1, "rgba(6, 182, 212, 0)");
+  ctx.fillStyle = coreGlow;
+  ctx.beginPath();
+  ctx.arc(0, 0, 14, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.restore();
-
-  // Circular podium floor
-  ctx.strokeStyle = "rgba(6, 182, 212, 0.3)";
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.arc(cx, cy, 35, 0, Math.PI * 2);
-  ctx.stroke();
 }
 
 function drawCampusFurniture(
   ctx: CanvasRenderingContext2D,
   tick: number
 ): void {
-  // 1. Server Racks in Server Bay (Blue Room)
-  const serverX = 515;
-  const serverY = 70;
-  for (let s = 0; s < 3; s++) {
-    const sx = serverX + s * 14;
-    ctx.fillStyle = "#020617";
-    ctx.fillRect(sx, serverY, 12, 30);
-    ctx.strokeStyle = "#334155";
-    ctx.lineWidth = 1;
-    ctx.strokeRect(sx, serverY, 12, 30);
+  ctx.save();
 
-    // Blinking server lights
-    ctx.fillStyle = tick % 12 < 6 ? "#22c55e" : "#0284c7";
-    ctx.fillRect(sx + 2, serverY + 4, 3, 2);
-    ctx.fillStyle = tick % 18 < 9 ? "#38bdf8" : "#10b981";
-    ctx.fillRect(sx + 7, serverY + 4, 3, 2);
+  // 1. Server Racks in Server Bay (Top-Right / Blue Room)
+  // Matching screenshot: 3 tall vertical server towers against the back wall
+  const serverX = 490;
+  const serverY = 82;
+  for (let s = 0; s < 3; s++) {
+    const sx = serverX + s * 16;
+    const sy = serverY + s * 9;
+
+    // Tower base & body
+    ctx.fillStyle = "#020617";
+    ctx.fillRect(sx, sy, 14, 28);
+    ctx.strokeStyle = "#334155";
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(sx, sy, 14, 28);
+
+    // Blinking LED status lights
+    ctx.fillStyle = tick % 14 < 7 ? "#22c55e" : "#0284c7";
+    ctx.fillRect(sx + 2, sy + 4, 3, 2);
+    ctx.fillStyle = tick % 20 < 10 ? "#38bdf8" : "#10b981";
+    ctx.fillRect(sx + 8, sy + 4, 3, 2);
     ctx.fillStyle = "#10b981";
-    ctx.fillRect(sx + 2, serverY + 12, 3, 2);
+    ctx.fillRect(sx + 2, sy + 12, 3, 2);
+    ctx.fillStyle = tick % 16 < 8 ? "#38bdf8" : "#22c55e";
+    ctx.fillRect(sx + 8, sy + 12, 3, 2);
+    ctx.fillStyle = "#22c55e";
+    ctx.fillRect(sx + 2, sy + 20, 3, 2);
   }
 
-  // 2. Dining Tables in Pantry & Canteen (Orange Room)
-  ctx.fillStyle = "#b45309";
-  ctx.fillRect(60, 260, 45, 20);
-  ctx.fillRect(115, 260, 45, 20);
-  ctx.fillStyle = "#78350f";
-  ctx.fillRect(62, 262, 41, 16);
-  ctx.fillRect(117, 262, 41, 16);
-
-  // Coffee Machine & Water Dispenser
-  ctx.fillStyle = "#334155";
-  ctx.fillRect(45, 335, 16, 22);
-  ctx.fillStyle = "#06b6d4";
-  ctx.fillRect(47, 337, 12, 10);
-
-  // 3. Treadmills in Rec & Gym (Red Room)
-  ctx.fillStyle = "#1e293b";
-  ctx.fillRect(195, 395, 28, 14);
-  ctx.fillRect(235, 395, 28, 14);
+  // Whiteboard / Architecture Board on back wall of Server Bay
   ctx.fillStyle = "#0f172a";
-  ctx.fillRect(197, 397, 24, 10);
-  ctx.fillRect(237, 397, 24, 10);
+  ctx.fillRect(545, 115, 30, 16);
+  ctx.strokeStyle = "#38bdf8";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(545, 115, 30, 16);
+  ctx.fillStyle = "#38bdf8";
+  ctx.fillRect(548, 118, 12, 2);
+  ctx.fillStyle = "#22c55e";
+  ctx.fillRect(548, 123, 18, 2);
 
-  // Workout mats (cyan and magenta mats)
+  // Large UI Screen in Focus Work Bay (Purple Room)
+  ctx.fillStyle = "#1e1b4b";
+  ctx.fillRect(205, 120, 28, 16);
+  ctx.strokeStyle = "#a855f7";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(205, 120, 28, 16);
+  ctx.fillStyle = "#c084fc";
+  ctx.fillRect(208, 123, 14, 2);
+  ctx.fillStyle = "#38bdf8";
+  ctx.fillRect(208, 127, 20, 2);
+
+  // 2. Dining Tables in Pantry & Canteen (Warm Orange Room)
+  ctx.fillStyle = "#b45309";
+  // Long table 1
+  ctx.fillRect(75, 270, 48, 16);
+  ctx.fillStyle = "#78350f";
+  ctx.fillRect(77, 272, 44, 12);
+  // Coffee mugs & plates
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(82, 274, 3, 3);
+  ctx.fillRect(98, 276, 4, 4);
+  ctx.fillRect(112, 274, 3, 3);
+
+  // Table 2
+  ctx.fillStyle = "#b45309";
+  ctx.fillRect(130, 270, 42, 16);
+  ctx.fillStyle = "#78350f";
+  ctx.fillRect(132, 272, 38, 12);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(138, 274, 4, 4);
+  ctx.fillRect(156, 274, 3, 3);
+
+  // Water Cooler / Dispenser
+  ctx.fillStyle = "#334155";
+  ctx.fillRect(205, 310, 14, 22);
+  // Transparent cyan water bottle on top
+  ctx.fillStyle = "#38bdf8";
+  ctx.fillRect(207, 302, 10, 10);
+
+  // 3. Treadmills in Rec & Gym (Red/Pink Room)
+  // Treadmill 1
+  ctx.fillStyle = "#1e293b";
+  ctx.fillRect(285, 410, 24, 12);
+  ctx.fillStyle = "#0f172a";
+  ctx.fillRect(287, 412, 20, 8);
+  // Console
+  ctx.fillStyle = "#ef4444";
+  ctx.fillRect(305, 408, 3, 6);
+
+  // Treadmill 2
+  ctx.fillStyle = "#1e293b";
+  ctx.fillRect(320, 425, 24, 12);
+  ctx.fillStyle = "#0f172a";
+  ctx.fillRect(322, 427, 20, 8);
   ctx.fillStyle = "#06b6d4";
-  ctx.fillRect(200, 360, 24, 14);
+  ctx.fillRect(340, 423, 3, 6);
+
+  // Workout Yoga Mats (Cyan & Pink mats matching screenshot)
+  // Cyan mat
+  ctx.fillStyle = "#06b6d4";
+  ctx.fillRect(245, 370, 26, 12);
+  // Hot pink mat
   ctx.fillStyle = "#ec4899";
-  ctx.fillRect(235, 360, 24, 14);
+  ctx.fillRect(278, 375, 26, 12);
 
-  // 4. Computer desks in Focus & Dev bays
-  const desks = [
-    { x: 230, y: 130 },
-    { x: 280, y: 130 },
-    { x: 230, y: 175 },
-    { x: 280, y: 175 },
-    { x: 420, y: 130 },
-    { x: 420, y: 170 },
-    { x: 520, y: 220 },
-    { x: 580, y: 220 },
-    { x: 520, y: 260 },
-    { x: 580, y: 260 },
-  ];
-
-  for (const d of desks) {
+  // 4. Computer Workstations across bays (with glowing dual monitors)
+  for (const d of CAMPUS_DESKS) {
+    // Desk surface
     ctx.fillStyle = "#1e293b";
-    ctx.fillRect(d.x - 14, d.y - 6, 28, 14);
-    ctx.fillStyle = "#334155";
-    ctx.fillRect(d.x - 7, d.y - 4, 14, 8);
-    // Glowing screen
-    ctx.fillStyle = "#06b6d4";
-    ctx.fillRect(d.x - 6, d.y - 3, 12, 6);
+    ctx.fillRect(d.x - 12, d.y - 6, 24, 12);
+    ctx.strokeStyle = "#334155";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(d.x - 12, d.y - 6, 24, 12);
+
+    if (d.hasMonitors) {
+      // Dual monitors with cyan glow
+      ctx.fillStyle = "#0f172a";
+      ctx.fillRect(d.x - 9, d.y - 12, 8, 7);
+      ctx.fillRect(d.x + 1, d.y - 12, 8, 7);
+
+      // Glowing screens
+      ctx.fillStyle = "#06b6d4";
+      ctx.fillRect(d.x - 8, d.y - 11, 6, 5);
+      ctx.fillRect(d.x + 2, d.y - 11, 6, 5);
+    }
+  }
+
+  ctx.restore();
+}
+
+function drawClickRipples(
+  ctx: CanvasRenderingContext2D,
+  ripples: RippleEffect[]
+): void {
+  for (const ripple of ripples) {
+    ctx.save();
+    ctx.strokeStyle = `rgba(6, 182, 212, ${ripple.opacity})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(ripple.x, ripple.y, ripple.radius, ripple.radius * 0.6, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
   }
 }
 
@@ -413,78 +768,140 @@ function drawAgentSprite(
 ): void {
   const { x, y } = agent.currentCoordinates;
 
-  // Selection / Hover Target Reticle
-  if (isSelected || isHovered) {
-    ctx.strokeStyle = isSelected ? "#38bdf8" : "#94a3b8";
-    ctx.lineWidth = isSelected ? 2 : 1;
+  ctx.save();
+
+  // 1. Selection indicator on the floor (Matches Josiah's cyan foot ring in screenshot)
+  if (isSelected) {
+    // Glowing cyan floor circle
+    ctx.strokeStyle = "#06b6d4";
+    ctx.lineWidth = 2.5;
     ctx.beginPath();
-    ctx.arc(x, y + 2, 16, 0, Math.PI * 2);
+    ctx.ellipse(x, y + 4, 18, 10, 0, 0, Math.PI * 2);
     ctx.stroke();
 
-    // Rotating selector brackets if selected
-    if (isSelected) {
-      ctx.save();
-      ctx.translate(x, y + 2);
-      ctx.rotate(tick * 0.05);
-      ctx.strokeStyle = "#06b6d4";
-      ctx.strokeRect(-18, -18, 36, 36);
-      ctx.restore();
-    }
+    // Rotating cyan brackets
+    ctx.save();
+    ctx.translate(x, y + 4);
+    ctx.rotate(tick * 0.04);
+    ctx.strokeStyle = "rgba(56, 189, 248, 0.6)";
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(-18, -10, 36, 20);
+    ctx.restore();
+  } else if (isHovered) {
+    // Soft hover ring
+    ctx.strokeStyle = "rgba(148, 163, 184, 0.7)";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.ellipse(x, y + 4, 15, 8, 0, 0, Math.PI * 2);
+    ctx.stroke();
   }
 
-  // Ground contact shadow
-  ctx.fillStyle = "rgba(0,0,0,0.4)";
+  // 2. Contact Shadow on floor
+  ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
   ctx.beginPath();
-  ctx.ellipse(x, y + 10, 8, 3.5, 0, 0, Math.PI * 2);
+  ctx.ellipse(x, y + 4, 8, 4, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Walking or breathing bob
+  // 3. Walking bobbing animation
   const isWalking = !!agent.targetCoordinates;
-  const bob = isWalking ? Math.sin(tick * 0.4) * 2 : Math.sin(tick * 0.06) * 1;
+  const bob = isWalking ? Math.sin(tick * 0.45) * 2.5 : Math.sin(tick * 0.06) * 0.8;
   const cy = y + bob;
 
+  // 4. Chibi Isometric Character Sprite
   // Body / Outfit
   ctx.fillStyle = agent.color;
-  ctx.fillRect(x - 5, cy - 2, 10, 9);
+  ctx.fillRect(x - 5, cy - 4, 10, 8);
 
-  // Head
-  ctx.fillStyle = "#fed7aa"; // Peach skin tone
-  ctx.fillRect(x - 4, cy - 10, 8, 8);
+  // Legs / Feet
+  ctx.fillStyle = "#1e293b";
+  if (isWalking) {
+    const legPhase = Math.sin(tick * 0.45);
+    ctx.fillRect(x - 4, cy + 4, 3, 3 + legPhase);
+    ctx.fillRect(x + 1, cy + 4, 3, 3 - legPhase);
+  } else {
+    ctx.fillRect(x - 4, cy + 4, 3, 3);
+    ctx.fillRect(x + 1, cy + 4, 3, 3);
+  }
 
-  // Hair
+  // Head (Peach skin tone)
+  ctx.fillStyle = "#fed7aa";
+  ctx.fillRect(x - 4, cy - 12, 8, 8);
+
+  // Hair / Hat
   ctx.fillStyle = "#0f172a";
-  ctx.fillRect(x - 5, cy - 12, 10, 4);
+  ctx.fillRect(x - 5, cy - 14, 10, 4);
 
-  // Status-colored badge above head
-  let statusBadgeColor = "#22c55e"; // working
-  if (agent.status === "eating") statusBadgeColor = "#f97316";
-  else if (agent.status === "gym") statusBadgeColor = "#38bdf8";
-  else if (agent.status === "meeting") statusBadgeColor = "#d946ef";
-  else if (agent.status === "break") statusBadgeColor = "#eab308";
-  else if (agent.status === "waiting_approval") statusBadgeColor = "#ef4444";
+  // Eyes
+  ctx.fillStyle = "#020617";
+  ctx.fillRect(x - 2, cy - 9, 1.5, 2);
+  ctx.fillRect(x + 1, cy - 9, 1.5, 2);
 
-  // Name Tag Bubble (matches screenshot: "• Julian", "• Blaze", etc.)
+  // 5. Status color dot matching screenshot
+  let dotColor = "#22c55e"; // Working (green)
+  if (agent.status === "eating") dotColor = "#f97316"; // Eating (orange)
+  else if (agent.status === "gym") dotColor = "#38bdf8"; // Gym (sky)
+  else if (agent.status === "meeting") dotColor = "#d946ef"; // Meeting (purple)
+  else if (agent.status === "break") dotColor = "#eab308"; // Break (amber)
+  else if (agent.status === "waiting_approval") dotColor = "#ef4444"; // Waiting (red)
+
+  // 6. Name Tag Pill (Rounded dark pill: "● Josiah", "● Arwin", etc.)
   ctx.font = "bold 9px monospace";
   const nameText = `● ${agent.name}`;
-  const textWidth = ctx.measureText(nameText).width;
-  const tagW = textWidth + 10;
+  const textMetrics = ctx.measureText(nameText);
+  const tagW = textMetrics.width + 10;
   const tagH = 15;
   const tagX = x - tagW / 2;
-  const tagY = cy - 26;
+  const tagY = cy - 28;
 
-  // Tag background
-  ctx.fillStyle = isSelected ? "#0284c7" : "rgba(15, 23, 42, 0.9)";
+  // Tag background pill
+  ctx.fillStyle = isSelected
+    ? "rgba(3, 105, 161, 0.95)"
+    : "rgba(10, 15, 30, 0.88)";
   ctx.strokeStyle = isSelected ? "#38bdf8" : "#334155";
-  ctx.lineWidth = 1;
-  ctx.fillRect(tagX, tagY, tagW, tagH);
-  ctx.strokeRect(tagX, tagY, tagW, tagH);
+  ctx.lineWidth = isSelected ? 1.5 : 1;
+
+  ctx.beginPath();
+  const radius = 4;
+  ctx.moveTo(tagX + radius, tagY);
+  ctx.lineTo(tagX + tagW - radius, tagY);
+  ctx.quadraticCurveTo(tagX + tagW, tagY, tagX + tagW, tagY + radius);
+  ctx.lineTo(tagX + tagW, tagY + tagH - radius);
+  ctx.quadraticCurveTo(tagX + tagW, tagY + tagH, tagX + tagW - radius, tagY + tagH);
+  ctx.lineTo(tagX + radius, tagY + tagH);
+  ctx.quadraticCurveTo(tagX, tagY + tagH, tagX, tagY + tagH - radius);
+  ctx.lineTo(tagX, tagY + radius);
+  ctx.quadraticCurveTo(tagX, tagY, tagX + radius, tagY);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
 
   // Status dot
-  ctx.fillStyle = statusBadgeColor;
+  ctx.fillStyle = dotColor;
   ctx.fillText("●", tagX + 4, tagY + 11);
 
   // Name text
   ctx.fillStyle = isSelected ? "#ffffff" : "#f1f5f9";
   ctx.fillText(agent.name, tagX + 13, tagY + 11);
-}
 
+  // 7. Floating Speech Bubble (if hovered or speaking)
+  if ((isHovered || agent.speechBubble) && agent.speechBubble) {
+    const bubbleText = agent.speechBubble;
+    ctx.font = "9px sans-serif";
+    const bubbleMetrics = ctx.measureText(bubbleText);
+    const bubbleW = Math.min(Math.max(bubbleMetrics.width + 12, 60), 160);
+    const bubbleH = 18;
+    const bubbleX = x - bubbleW / 2;
+    const bubbleY = tagY - bubbleH - 4;
+
+    ctx.fillStyle = "rgba(15, 23, 42, 0.95)";
+    ctx.strokeStyle = "#38bdf8";
+    ctx.lineWidth = 1;
+    ctx.fillRect(bubbleX, bubbleY, bubbleW, bubbleH);
+    ctx.strokeRect(bubbleX, bubbleY, bubbleW, bubbleH);
+
+    ctx.fillStyle = "#38bdf8";
+    ctx.fillText(bubbleText.substring(0, 24), bubbleX + 6, bubbleY + 12);
+  }
+
+  ctx.restore();
+}

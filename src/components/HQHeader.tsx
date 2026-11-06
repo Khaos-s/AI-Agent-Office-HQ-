@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { RoomLocation } from "@/types";
-import { Brain, Layers } from "lucide-react";
+import { AgentProfile, RoomLocation } from "@/types";
+import { Brain, ChevronDown, Layers } from "lucide-react";
 
 interface HQHeaderProps {
   currentRoom: RoomLocation;
@@ -11,6 +11,8 @@ interface HQHeaderProps {
   onToggleViewMode: (mode: "2d" | "3d") => void;
   totalAgents: number;
   onOpenBrainVault: () => void;
+  agents?: AgentProfile[];
+  onSelectAgent?: (agent: AgentProfile) => void;
 }
 
 export const HQHeader: React.FC<HQHeaderProps> = ({
@@ -20,8 +22,11 @@ export const HQHeader: React.FC<HQHeaderProps> = ({
   onToggleViewMode,
   totalAgents,
   onOpenBrainVault,
+  agents = [],
+  onSelectAgent,
 }) => {
   const [time, setTime] = useState<string>("");
+  const [isRosterDropdownOpen, setIsRosterDropdownOpen] = useState(false);
 
   useEffect(() => {
     const updateTime = () => {
@@ -122,9 +127,48 @@ export const HQHeader: React.FC<HQHeaderProps> = ({
             <span>BRAIN VAULT</span>
           </button>
 
-          <div className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-cyan-400 font-bold text-xs flex items-center gap-1.5">
-            <Layers className="w-3.5 h-3.5 text-cyan-400" />
-            <span>{totalAgents} AGENTS ROSTER</span>
+          {/* 24 AGENTS ROSTER v Dropdown Trigger (Matching Screenshot) */}
+          <div className="relative">
+            <button
+              onClick={() => setIsRosterDropdownOpen(!isRosterDropdownOpen)}
+              className="px-3 py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-950 border border-emerald-500/40 text-emerald-400 font-bold text-xs flex items-center gap-1.5 transition-all shadow-md"
+            >
+              <Layers className="w-3.5 h-3.5 text-emerald-400" />
+              <span>{totalAgents} AGENTS ROSTER</span>
+              <ChevronDown className="w-3 h-3 text-emerald-400" />
+            </button>
+
+            {/* Dropdown Menu */}
+            {isRosterDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-72 bg-slate-950 border border-slate-800 rounded-xl shadow-2xl p-2 z-50 max-h-80 overflow-y-auto">
+                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider px-2 py-1 border-b border-slate-800">
+                  Campus Agent Roster ({agents.length})
+                </div>
+                <div className="space-y-1 mt-1">
+                  {agents.map((agent) => (
+                    <button
+                      key={agent.id}
+                      onClick={() => {
+                        if (onSelectAgent) onSelectAgent(agent);
+                        setIsRosterDropdownOpen(false);
+                      }}
+                      className="w-full text-left px-2 py-1.5 rounded hover:bg-slate-900 flex items-center justify-between text-[11px] text-slate-200 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: agent.color }}
+                        ></span>
+                        <span className="font-bold">{agent.name}</span>
+                      </div>
+                      <span className="text-[9px] text-slate-400 uppercase">
+                        {agent.currentRoom.replace("_", " ")}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* 3D / 2D Toggle Switcher (Matching Screenshot) */}
@@ -155,4 +199,3 @@ export const HQHeader: React.FC<HQHeaderProps> = ({
     </header>
   );
 };
-

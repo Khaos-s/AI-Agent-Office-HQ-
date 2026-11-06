@@ -96,6 +96,25 @@ export default function Home() {
     }
   };
 
+  // Direct Click-to-Move Coordinates
+  const handleMoveAgentDirectly = async (agentId: string, x: number, y: number) => {
+    try {
+      const res = await fetch("/api/office/state", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: agentId, targetCoordinates: { x, y } }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAgents((prev) => prev.map((a) => (a.id === agentId ? data.agent : a)));
+        showNotification(`Dispatched @${agentId} walking to target position.`);
+        fetchData();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   // Update Agent Status
   const handleUpdateAgentStatus = async (
     id: string,
@@ -191,6 +210,8 @@ export default function Home() {
         onToggleViewMode={setViewMode}
         totalAgents={campusStats.total}
         onOpenBrainVault={() => setIsBrainVaultOpen(true)}
+        agents={agents}
+        onSelectAgent={(agent) => setSelectedAgent(agent)}
       />
 
       {/* Main Command Surface */}
@@ -208,6 +229,7 @@ export default function Home() {
               }
             }}
             onRoomChange={setCurrentRoom}
+            onMoveAgentDirectly={handleMoveAgentDirectly}
           />
         </div>
 
@@ -219,6 +241,7 @@ export default function Home() {
           onSelectAgent={(agent) => setSelectedAgent(agent)}
           onRouteAgent={handleRouteAgent}
           onOpenApprovals={() => setIsApprovalsOpen(true)}
+          onTriggerTestHITL={() => handleTriggerHITLAction(selectedAgent?.id || "gabriel")}
         />
       </div>
 

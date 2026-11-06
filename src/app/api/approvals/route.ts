@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getApprovals, createApproval } from "@/lib/approvals-store";
 import { ApprovalStatus, RiskLevel } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const status = (searchParams.get("status") as ApprovalStatus) || undefined;

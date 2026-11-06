@@ -572,6 +572,16 @@ export function updateAgentStatus(
 
 export type RoutingDestination = "desk" | "pantry" | "gym" | "brain";
 
+export function moveAgentToCoords(id: string, x: number, y: number): AgentProfile {
+  const agent = agentsState.find((a) => a.id === id);
+  if (!agent) {
+    throw new Error(`Agent with id "${id}" not found.`);
+  }
+  agent.targetCoordinates = { x, y, z: 0 };
+  agent.speechBubble = "Moving to coordinates on campus.";
+  return agent;
+}
+
 export function routeAgent(id: string, destination: RoutingDestination): AgentProfile {
   const agent = agentsState.find((a) => a.id === id);
   if (!agent) {

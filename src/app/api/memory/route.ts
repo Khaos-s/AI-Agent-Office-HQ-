@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getMemories, addMemory } from "@/lib/memory-store";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const tag = searchParams.get("tag") || undefined;

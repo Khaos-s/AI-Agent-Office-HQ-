@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 
+export const dynamic = "force-dynamic";
+
 const BRAIN_ROOT = path.resolve(process.cwd(), "brain");
 const AGENTS_ROOT = path.resolve(process.cwd(), "agents");
 

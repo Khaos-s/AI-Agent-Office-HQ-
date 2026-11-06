@@ -3,6 +3,8 @@ import { getApprovalById, resolveApproval } from "@/lib/approvals-store";
 import { executeApprovedAction } from "@/lib/action-handlers";
 import { updateAgentStatus } from "@/lib/agent-registry";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }

@@ -5,11 +5,13 @@ import { AgentProfile, RoomLocation } from "@/types";
 import {
   renderIsometricCampus,
   getAgentAtIsometricCoords,
+  getRoomAtIsometricCoords,
   CAMPUS_WIDTH,
   CAMPUS_HEIGHT,
+  RippleEffect,
 } from "@/lib/isometric-campus-renderer";
 import { ThreeCampus } from "@/components/ThreeCampus";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, Compass } from "lucide-react";
 
 interface CampusViewportProps {
   viewMode: "2d" | "3d";
@@ -18,6 +20,7 @@ interface CampusViewportProps {
   selectedAgentId: string | null;
   onSelectAgent: (agent: AgentProfile | null) => void;
   onRoomChange: (room: RoomLocation) => void;
+  onMoveAgentDirectly?: (agentId: string, x: number, y: number) => void;
 }
 
 export const CampusViewport: React.FC<CampusViewportProps> = ({
@@ -27,6 +30,7 @@ export const CampusViewport: React.FC<CampusViewportProps> = ({
   selectedAgentId,
   onSelectAgent,
   onRoomChange,
+  onMoveAgentDirectly,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -34,43 +38,62 @@ export const CampusViewport: React.FC<CampusViewportProps> = ({
   const [hoveredAgentId, setHoveredAgentId] = useState<string | null>(null);
   const [zoom, setZoom] = useState<number>(1);
   const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const targetCamRef = useRef<{ panX: number; panY: number; zoom: number }>({
+    panX: 0,
+    panY: 0,
+    zoom: 1,
+  });
+
   const isDraggingRef = useRef<boolean>(false);
   const dragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const tickRef = useRef<number>(0);
+  const ripplesRef = useRef<RippleEffect[]>([]);
 
-  // Update room focus
+  // Local animated agent positions for 60fps interpolation
+  const localAgentsRef = useRef<AgentProfile[]>([]);
+
+  useEffect(() => {
+    // Keep local agents in sync with incoming server state while preserving active walking
+    localAgentsRef.current = agents.map((agent) => {
+      const existing = localAgentsRef.current.find((a) => a.id === agent.id);
+      if (existing && existing.targetCoordinates) {
+        return {
+          ...agent,
+          currentCoordinates: { ...existing.currentCoordinates },
+          targetCoordinates: { ...existing.targetCoordinates },
+        };
+      }
+      return { ...agent };
+    });
+  }, [agents]);
+
+  // Update room focus with smooth interpolation target
   useEffect(() => {
     switch (currentRoom) {
       case "focus_work":
-        setPan({ x: 120, y: 100 });
-        setZoom(1.3);
+        targetCamRef.current = { panX: 130, panY: 100, zoom: 1.35 };
         break;
       case "server_bay":
-        setPan({ x: -120, y: 120 });
-        setZoom(1.3);
+        targetCamRef.current = { panX: -110, panY: 120, zoom: 1.35 };
         break;
       case "pantry":
       case "all_hands":
-        setPan({ x: 250, y: -40 });
-        setZoom(1.35);
+        targetCamRef.current = { panX: 250, panY: -40, zoom: 1.35 };
         break;
       case "gym":
-        setPan({ x: 180, y: -150 });
-        setZoom(1.35);
+        targetCamRef.current = { panX: 170, panY: -150, zoom: 1.35 };
         break;
       case "brain":
-        setPan({ x: 0, y: -20 });
-        setZoom(1.4);
+        targetCamRef.current = { panX: 0, panY: -20, zoom: 1.4 };
         break;
       case "overview":
       default:
-        setPan({ x: 0, y: 0 });
-        setZoom(1.0);
+        targetCamRef.current = { panX: 0, panY: 0, zoom: 1.0 };
         break;
     }
   }, [currentRoom]);
 
-  // 2D Canvas Render Loop
+  // 2D Canvas Render Loop with Camera Lerp and Agent Interpolation
   useEffect(() => {
     if (viewMode !== "2d") return;
 
@@ -83,15 +106,64 @@ export const CampusViewport: React.FC<CampusViewportProps> = ({
 
     const render = () => {
       tickRef.current += 1;
+
+      // Smooth camera lerp towards target if not dragging
+      if (!isDraggingRef.current) {
+        setPan((prev) => {
+          const dx = targetCamRef.current.panX - prev.x;
+          const dy = targetCamRef.current.panY - prev.y;
+          if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+            return { x: prev.x + dx * 0.1, y: prev.y + dy * 0.1 };
+          }
+          return prev;
+        });
+
+        setZoom((prev) => {
+          const dz = targetCamRef.current.zoom - prev;
+          if (Math.abs(dz) > 0.005) {
+            return prev + dz * 0.1;
+          }
+          return prev;
+        });
+      }
+
+      // 60 FPS agent walking interpolation
+      for (const a of localAgentsRef.current) {
+        if (a.targetCoordinates) {
+          const dx = a.targetCoordinates.x - a.currentCoordinates.x;
+          const dy = a.targetCoordinates.y - a.currentCoordinates.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 2.5) {
+            a.currentCoordinates.x = a.targetCoordinates.x;
+            a.currentCoordinates.y = a.targetCoordinates.y;
+            delete a.targetCoordinates;
+          } else {
+            a.currentCoordinates.x += (dx / dist) * Math.min(dist, 3.5);
+            a.currentCoordinates.y += (dy / dist) * Math.min(dist, 3.5);
+          }
+        }
+      }
+
+      // Update click ripples
+      ripplesRef.current = ripplesRef.current
+        .map((r) => ({
+          ...r,
+          radius: r.radius + (r.maxRadius - r.radius) * 0.12 + 0.5,
+          opacity: r.opacity - 0.03,
+        }))
+        .filter((r) => r.opacity > 0.05);
+
       renderIsometricCampus(
         ctx,
-        agents,
+        localAgentsRef.current,
         selectedAgentId,
         hoveredAgentId,
         tickRef.current,
         zoom,
-        pan
+        pan,
+        ripplesRef.current
       );
+
       animationFrameId = requestAnimationFrame(render);
     };
 
@@ -100,7 +172,7 @@ export const CampusViewport: React.FC<CampusViewportProps> = ({
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
-  }, [viewMode, agents, selectedAgentId, hoveredAgentId, zoom, pan]);
+  }, [viewMode, selectedAgentId, hoveredAgentId, zoom, pan]);
 
   // Handle High-DPI scaling
   useEffect(() => {
@@ -153,15 +225,18 @@ export const CampusViewport: React.FC<CampusViewportProps> = ({
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (isDraggingRef.current) {
-      setPan({
+      const newPan = {
         x: e.clientX - dragStartRef.current.x,
         y: e.clientY - dragStartRef.current.y,
-      });
+      };
+      setPan(newPan);
+      targetCamRef.current.panX = newPan.x;
+      targetCamRef.current.panY = newPan.y;
       return;
     }
 
     const { x, y } = getTransformedCoordinates(e);
-    const agent = getAgentAtIsometricCoords(x, y, agents);
+    const agent = getAgentAtIsometricCoords(x, y, localAgentsRef.current);
     setHoveredAgentId(agent ? agent.id : null);
   };
 
@@ -171,17 +246,43 @@ export const CampusViewport: React.FC<CampusViewportProps> = ({
 
   const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const { x, y } = getTransformedCoordinates(e);
-    const agent = getAgentAtIsometricCoords(x, y, agents);
-    onSelectAgent(agent);
+
+    // Add visual click ripple
+    ripplesRef.current.push({
+      x,
+      y,
+      radius: 4,
+      maxRadius: 28,
+      opacity: 0.9,
+    });
+
+    const agent = getAgentAtIsometricCoords(x, y, localAgentsRef.current);
+    if (agent) {
+      onSelectAgent(agent);
+      return;
+    }
+
+    // Check if clicked an empty floor space in a room
+    const clickedRoom = getRoomAtIsometricCoords(x, y);
+    if (clickedRoom) {
+      onRoomChange(clickedRoom.type);
+    }
+
+    // If an agent is selected and user clicks holding shift or empty spot
+    if (e.shiftKey && selectedAgentId && onMoveAgentDirectly) {
+      onMoveAgentDirectly(selectedAgentId, x, y);
+    }
   };
 
   const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
     e.preventDefault();
-    const newZoom = Math.min(Math.max(zoom - e.deltaY * 0.001, 0.7), 2.2);
+    const newZoom = Math.min(Math.max(zoom - e.deltaY * 0.001, 0.75), 2.2);
     setZoom(newZoom);
+    targetCamRef.current.zoom = newZoom;
   };
 
   const resetCamera = () => {
+    targetCamRef.current = { panX: 0, panY: 0, zoom: 1.0 };
     setPan({ x: 0, y: 0 });
     setZoom(1.0);
     onRoomChange("overview");
@@ -208,30 +309,47 @@ export const CampusViewport: React.FC<CampusViewportProps> = ({
             onMouseUp={handleMouseUp}
             onWheel={handleWheel}
             className="w-full h-auto max-w-full"
-            style={{ imageRendering: "pixelated" }}
+            style={{
+              imageRendering: "pixelated",
+              cursor: hoveredAgentId ? "pointer" : isDraggingRef.current ? "grabbing" : "grab",
+            }}
           />
         </div>
       )}
 
-      {/* Floating Viewport Status Bar (Matches Screenshot) */}
-      <div className="w-full bg-slate-950/95 border-t border-slate-800/80 px-4 py-2 flex flex-wrap items-center justify-between text-[11px] font-mono text-slate-400 gap-2">
-        <div className="flex items-center space-x-2">
-          <span className="text-cyan-400 font-bold uppercase">
-            VIEWPORT ({viewMode.toUpperCase()} ISO): {currentRoom.toUpperCase().replace("_", " ")}
+      {/* Floating Viewport Status Bar (Matches Screenshot with Compass 'N') */}
+      <div className="w-full bg-[#050b14]/95 border-t border-slate-800/80 px-4 py-2 flex flex-wrap items-center justify-between text-[11px] font-mono text-slate-400 gap-2">
+        <div className="flex items-center space-x-3">
+          {/* Compass 'N' Indicator matching screenshot */}
+          <div
+            onClick={resetCamera}
+            title="Isometric Compass (North)"
+            className="w-6 h-6 rounded-full bg-slate-900 border border-cyan-500/50 flex items-center justify-center text-cyan-300 font-bold text-[10px] shadow cursor-pointer hover:border-cyan-300 transition-all"
+          >
+            N
+          </div>
+
+          <span className="text-cyan-400 font-bold uppercase tracking-wider text-[11px]">
+            VIEWPORT ({viewMode.toUpperCase()} ISO):{" "}
+            <span className="text-slate-200">{currentRoom.toUpperCase().replace("_", " ")}</span>
           </span>
+
           <button
             onClick={resetCamera}
-            className="flex items-center gap-1 px-2 py-0.5 rounded bg-slate-900 border border-slate-700 hover:text-white transition-all text-[10px]"
+            className="flex items-center gap-1 px-2 py-0.5 rounded bg-slate-900 border border-slate-700 hover:text-white hover:border-slate-500 transition-all text-[10px]"
           >
-            <RotateCcw className="w-3 h-3" /> Reset Camera
+            <RotateCcw className="w-3 h-3 text-cyan-400" /> Reset Camera
           </button>
         </div>
 
-        <div className="text-slate-500 text-[10px]">
-          Click Agent to Inspect & Route • Drag to Pan • Scroll to Zoom
+        <div className="text-slate-400 text-[10px] tracking-wide flex items-center gap-2">
+          <span>Click Agent to Inspect & Route</span>
+          <span>•</span>
+          <span>Drag to Pan</span>
+          <span>•</span>
+          <span>Scroll to Zoom</span>
         </div>
       </div>
     </div>
   );
 };
-
