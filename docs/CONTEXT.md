@@ -50,3 +50,4 @@
 - `npm run dev`: Launch local development server on `http://localhost:3000`.
 - `npm test`: Run complete Vitest suite.
 - `npm run build`: Compile production Next.js build.
+

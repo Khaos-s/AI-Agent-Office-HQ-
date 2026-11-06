@@ -1,0 +1,50 @@
+[
+  {
+    "id": "mem-001",
+    "agentId": "lead",
+    "title": "Office Architecture Standard",
+    "content": "All department agents operate on 'One Agent, One Job' protocol. Any public or financial mutations require HITL approval.",
+    "tags": [
+      "core",
+      "governance",
+      "architecture"
+    ],
+    "createdAt": "2026-11-06T08:00:00.000Z"
+  },
+  {
+    "id": "mem-002",
+    "agentId": "research",
+    "title": "GitHub Radar Scoring Baseline",
+    "content": "Daily 6:00 AM Radar scan formula: (Stars Growth * 0.4) + (Topic Relevance * 0.4) + (Freshness * 0.2). Track AI agents, memory, video, voice.",
+    "tags": [
+      "radar",
+      "github",
+      "methodology"
+    ],
+    "createdAt": "2026-11-06T08:15:00.000Z"
+  },
+  {
+    "id": "mem-003",
+    "agentId": "tbx-shop",
+    "title": "TBX Return Policy Guidelines",
+    "content": "Damaged orders under $100 can be refunded after photo inspection. High-risk refunds over $100 require dual-operator approval.",
+    "tags": [
+      "ecommerce",
+      "shopify",
+      "policy"
+    ],
+    "createdAt": "2026-11-06T08:30:00.000Z"
+  },
+  {
+    "id": "mem-004",
+    "agentId": "dev",
+    "title": "Git Worktree Protocol",
+    "content": "Branch names must prefix with feature/ or fix/. Direct pushes to master/main are blocked by pre-commit hooks and branch protection.",
+    "tags": [
+      "dev",
+      "git",
+      "standards"
+    ],
+    "createdAt": "2026-11-06T08:45:00.000Z"
+  }
+]

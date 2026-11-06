@@ -1,0 +1,53 @@
+[
+  {
+    "id": "app-001",
+    "agentId": "tbx-shop",
+    "actionType": "shopify_refund",
+    "title": "Refund Request: Order #4089",
+    "description": "Customer requested a $45.00 refund due to delayed shipment.",
+    "riskLevel": "medium",
+    "payload": {
+      "orderId": "4089",
+      "amount": 45,
+      "currency": "USD",
+      "customer": "alex.taylor@example.com",
+      "reason": "Carrier delay over 7 days"
+    },
+    "status": "pending",
+    "createdAt": "2026-11-06T09:10:00.000Z"
+  },
+  {
+    "id": "app-002",
+    "agentId": "social",
+    "actionType": "social_publish",
+    "title": "X/Twitter Announcement: Agent Office v1",
+    "description": "Scheduled tweet introducing the 2D virtual HQ canvas and department sub-agents.",
+    "riskLevel": "low",
+    "payload": {
+      "platform": "twitter",
+      "content": "🚀 Introducing AI Agent Office HQ — watch your AI team collaborate in real-time in a 2D pixel-art virtual headquarters! #AIAgents #OpenSource",
+      "scheduledFor": "Immediate"
+    },
+    "status": "pending",
+    "createdAt": "2026-11-06T09:25:00.000Z"
+  },
+  {
+    "id": "app-003",
+    "agentId": "inbox",
+    "actionType": "email_send",
+    "title": "Brand Partnership Reply: Acme Corp",
+    "description": "Response to Acme Corp sponsorship offer for YouTube video integrations.",
+    "riskLevel": "high",
+    "payload": {
+      "recipient": "partnerships@acme.corp",
+      "subject": "Re: Antigravity AI Agent Office Sponsorship Inquiry",
+      "proposedBudget": 3500,
+      "deliverables": [
+        "1x dedicated review video",
+        "Social mentions"
+      ]
+    },
+    "status": "pending",
+    "createdAt": "2026-11-06T09:40:00.000Z"
+  }
+]

@@ -52,3 +52,4 @@ describe("GitHub Radar Scoring Engine", () => {
     expect(fetched[0].id).toBe(results[0].id);
   });
 });
+

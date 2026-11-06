@@ -325,3 +325,4 @@
 
 - [ ] **Step 4: Final verification and commit**
   - Run: `git status` && `git add README.md` && `git commit -m "docs: finalize project setup and verification"`
+

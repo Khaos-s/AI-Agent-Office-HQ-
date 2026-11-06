@@ -44,3 +44,4 @@ $$\text{Radar Score} = (\text{Stars Growth Normalized} \times 0.40) + (\text{Top
 - **Unit Tests**: Store read/write atomicity, self-healing from corrupted files, duplicate tags handling, and radar scoring formula edge cases.
 - **API Tests**: State transition guards, 409 conflict on double approvals, and input boundary validations.
 - **Build Verification**: `npm run build` production compilation check with TypeScript typing.
+

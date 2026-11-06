@@ -203,3 +203,4 @@ export function updateAgentStatus(
 export function resetAgentState(): void {
   agentsState = JSON.parse(JSON.stringify(INITIAL_AGENTS));
 }
+

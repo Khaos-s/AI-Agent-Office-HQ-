@@ -68,3 +68,4 @@ export interface RadarItem {
   url: string;
   lastScannedAt: string;
 }
+

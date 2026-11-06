@@ -18,3 +18,4 @@ This document defines project-specific operating instructions and boundaries for
 - **Self-Healing Persistence**: Local data stores (`data/memory.json`, `data/approvals.json`, `radar/data.json`) must self-heal with valid seed defaults if uninitialized or corrupted.
 - **Honest States & No Hallucinated Effects**: Use accurate loading, empty, error, and success states. An agent must never report an action as dispatched or completed without a verified execution receipt.
 - **Isolated Worktrees for Dev**: The Dev agent must work inside isolated Git branches/worktrees and submit Pull Requests; pushing unreviewed code directly to `main` is strictly forbidden.
+

@@ -80,3 +80,4 @@
 
 - **Atomic File Updates**: Data files in `data/*.json` are written atomically via temp files and rename operations to prevent partial reads or corruptions.
 - **State Transition Guard**: An approval action validates that the current record status is strictly `'pending'`. Concurrent requests on an already resolved action return a `409 Conflict`.
+

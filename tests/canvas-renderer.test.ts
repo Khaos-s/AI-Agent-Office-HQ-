@@ -47,3 +47,4 @@ describe("Canvas Hit-Testing and Coordinate Calculations", () => {
     expect(miss).toBeNull();
   });
 });
+

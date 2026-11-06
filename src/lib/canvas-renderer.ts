@@ -310,3 +310,4 @@ function drawSpeechBubble(
     bubbleY + 14
   );
 }
+

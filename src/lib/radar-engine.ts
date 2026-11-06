@@ -171,3 +171,4 @@ function runRadarScanSync(): RadarItem[] {
 export async function runRadarScan(): Promise<RadarItem[]> {
   return runRadarScanSync();
 }
+
