@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #090d16;
+  --foreground: #f8fafc;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Pixel styling helpers */
+.pixel-corners {
+  box-shadow: 0 0 0 1px #334155, 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+}
+
+.pixel-font {
+  font-family: "Courier New", Courier, monospace;
+}
+
