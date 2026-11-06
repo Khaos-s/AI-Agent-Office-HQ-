@@ -1,0 +1,79 @@
+[
+  {
+    "id": "mem0ai/mem0",
+    "repo": "mem0ai/mem0",
+    "description": "The memory layer for personalized AI agents and multi-agent systems.",
+    "stars": 21500,
+    "starsGrowth": 480,
+    "topic": "memory",
+    "score": 97,
+    "url": "https://github.com/mem0ai/mem0",
+    "lastScannedAt": "2026-11-06T02:56:19.163Z"
+  },
+  {
+    "id": "pixel-agents-hq/pixel-agents",
+    "repo": "pixel-agents-hq/pixel-agents",
+    "description": "Visual 2D pixel-art virtual office headquarters for autonomous coding agents.",
+    "stars": 3840,
+    "starsGrowth": 620,
+    "topic": "ai-agents",
+    "score": 90,
+    "url": "https://github.com/pixel-agents-hq/pixel-agents",
+    "lastScannedAt": "2026-11-06T02:56:19.163Z"
+  },
+  {
+    "id": "anthropics/claude-code",
+    "repo": "anthropics/claude-code",
+    "description": "Agentic coding tool and subagent orchestration runtime.",
+    "stars": 14200,
+    "starsGrowth": 750,
+    "topic": "ai-agents",
+    "score": 90,
+    "url": "https://github.com/anthropics/claude-code",
+    "lastScannedAt": "2026-11-06T02:56:19.163Z"
+  },
+  {
+    "id": "getzep/graphiti",
+    "repo": "getzep/graphiti",
+    "description": "Temporally aware knowledge graph engine for dynamic agent memory over MCP.",
+    "stars": 6200,
+    "starsGrowth": 390,
+    "topic": "memory",
+    "score": 89,
+    "url": "https://github.com/getzep/graphiti",
+    "lastScannedAt": "2026-11-06T02:56:19.163Z"
+  },
+  {
+    "id": "remotion-dev/remotion",
+    "repo": "remotion-dev/remotion",
+    "description": "Make videos programmatically with React and generative AI automation.",
+    "stars": 19800,
+    "starsGrowth": 210,
+    "topic": "video",
+    "score": 76,
+    "url": "https://github.com/remotion-dev/remotion",
+    "lastScannedAt": "2026-11-06T02:56:19.163Z"
+  },
+  {
+    "id": "elevenlabs/elevenlabs-python",
+    "repo": "elevenlabs/elevenlabs-python",
+    "description": "Official Python library for real-time voice synthesis and agents.",
+    "stars": 4300,
+    "starsGrowth": 180,
+    "topic": "voice",
+    "score": 71,
+    "url": "https://github.com/elevenlabs/elevenlabs-python",
+    "lastScannedAt": "2026-11-06T02:56:19.163Z"
+  },
+  {
+    "id": "coqui-ai/TTS",
+    "repo": "coqui-ai/TTS",
+    "description": "Deep learning toolkit for Text-to-Speech and voice cloning.",
+    "stars": 32400,
+    "starsGrowth": 140,
+    "topic": "voice",
+    "score": 59,
+    "url": "https://github.com/coqui-ai/TTS",
+    "lastScannedAt": "2026-11-06T02:56:19.163Z"
+  }
+]
