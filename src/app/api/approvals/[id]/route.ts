@@ -1,3 +1,6 @@
+import { withOperator } from "@/lib/supabase/server";
+import { readAgents, saveAgent } from "@/lib/persistent-agents";
+import { requireOperator } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { getApprovalById, resolveApproval } from "@/lib/approvals-store";
 import { executeApprovedAction } from "@/lib/action-handlers";
@@ -5,24 +8,28 @@ import { updateAgentStatus } from "@/lib/agent-registry";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(
+async function handleGET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const approval = getApprovalById(params.id);
+  const approval = await getApprovalById(params.id);
   if (!approval) {
     return NextResponse.json({ success: false, error: "Approval not found" }, { status: 404 });
   }
   return NextResponse.json({ success: true, approval });
 }
 
-export async function PATCH(
+async function handlePATCH(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const body = await request.json();
-    const { action, reviewer = "Operator", comment } = body;
+    const body = await request.json().catch(() => null);
+    if (!body || typeof body !== "object") return NextResponse.json({ success: false, error: "Invalid request." }, { status: 400 });
+    const { action, comment } = body;
+    if (comment !== undefined && (typeof comment !== "string" || comment.length > 2000)) return NextResponse.json({ success: false, error: "Invalid comment." }, { status: 400 });
+    const operator = await requireOperator();
+    const reviewer = operator?.id ?? "Local Operator";
 
     if (action !== "approve" && action !== "reject") {
       return NextResponse.json(
@@ -31,7 +38,7 @@ export async function PATCH(
       );
     }
 
-    const current = getApprovalById(params.id);
+    const current = await getApprovalById(params.id);
     if (!current) {
       return NextResponse.json({ success: false, error: "Approval not found" }, { status: 404 });
     }
@@ -46,42 +53,15 @@ export async function PATCH(
       );
     }
 
-    let receipt: Record<string, any> | undefined;
-
-    if (action === "approve") {
-      receipt = await executeApprovedAction(current);
-      // Update requesting agent status back to working or idle
-      try {
-        updateAgentStatus(
-          current.agentId,
-          "working",
-          `Executing approved action: ${current.title}`,
-          "Action approved! Proceeding with execution."
-        );
-      } catch (e) {
-        // Agent id might be generic
-      }
-    } else {
-      // Action rejected
-      try {
-        updateAgentStatus(
-          current.agentId,
-          "break",
-          `Standby (Action rejected: ${current.title})`,
-          "Action was rejected by human operator."
-        );
-      } catch (e) {
-        // Ignore
-      }
+    // Execution is a sandbox receipt only; the conditional database update and audit are atomic.
+    const receipt = action === "approve" ? await executeApprovedAction(current) : undefined;
+    const resolved = await resolveApproval(params.id, action === "approve" ? "approved" : "rejected", reviewer, comment, receipt);
+    const agents = await readAgents();
+    const agent = agents.find(a => a.id === current.agentId);
+    if (agent) {
+      updateAgentStatus(agent.id, action === "approve" ? "working" : "break", `Sandbox action ${action === "approve" ? "approved" : "rejected"}: ${current.title}`, "Decision recorded. External execution is disabled.", agents);
+      await saveAgent(agent);
     }
-
-    const resolved = resolveApproval(
-      params.id,
-      action === "approve" ? "approved" : "rejected",
-      reviewer,
-      comment,
-      receipt
-    );
 
     return NextResponse.json({
       success: true,
@@ -91,8 +71,11 @@ export async function PATCH(
   } catch (error: any) {
     return NextResponse.json(
       { success: false, error: error.message || "Failed to resolve approval." },
-      { status: 500 }
+      { status: /already resolved/i.test(error.message) ? 409 : 500 }
     );
   }
 }
 
+
+export const GET = withOperator(handleGET);
+export const PATCH = withOperator(handlePATCH);

@@ -1,3 +1,4 @@
+import { withOperator } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
@@ -7,20 +8,15 @@ export const dynamic = "force-dynamic";
 const BRAIN_ROOT = path.resolve(process.cwd(), "brain");
 const AGENTS_ROOT = path.resolve(process.cwd(), "agents");
 
-export async function GET(request: Request) {
+async function handleGET(request: Request) {
   const { searchParams } = new URL(request.url);
   const file = searchParams.get("file");
 
   if (file) {
-    // Read specific file safely
-    const safePath = path.normalize(file).replace(/^(\.\.[\/\\])+/, "");
-    const fullPath = path.resolve(process.cwd(), safePath);
-
-    if (
-      !fullPath.startsWith(BRAIN_ROOT) &&
-      !fullPath.startsWith(AGENTS_ROOT) &&
-      !fullPath.endsWith(".md")
-    ) {
+    const safePath = file;
+    const fullPath = path.resolve(process.cwd(), file);
+    const allowed = [BRAIN_ROOT, AGENTS_ROOT].some(root => fullPath.startsWith(root + path.sep));
+    if (!allowed || path.extname(fullPath).toLowerCase() !== ".md") {
       return NextResponse.json({ success: false, error: "Access denied" }, { status: 403 });
     }
 
@@ -28,7 +24,9 @@ export async function GET(request: Request) {
       if (!fs.existsSync(fullPath)) {
         return NextResponse.json({ success: false, error: "File not found" }, { status: 404 });
       }
-      const content = fs.readFileSync(fullPath, "utf-8");
+      const canonical = fs.realpathSync(fullPath);
+      if (![BRAIN_ROOT, AGENTS_ROOT].some(root => canonical.startsWith(fs.realpathSync(root) + path.sep))) return NextResponse.json({ success: false, error: "Access denied" }, { status: 403 });
+      const content = fs.readFileSync(canonical, "utf-8");
       return NextResponse.json({ success: true, file: safePath, content });
     } catch (e: any) {
       return NextResponse.json({ success: false, error: e.message }, { status: 500 });
@@ -55,3 +53,5 @@ export async function GET(request: Request) {
   return NextResponse.json({ success: true, sections });
 }
 
+
+export const GET = withOperator(handleGET);

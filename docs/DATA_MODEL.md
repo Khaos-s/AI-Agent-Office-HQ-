@@ -2,7 +2,7 @@
 
 ## Authorities and Trust Boundaries
 
-- **State Authority**: The Next.js server runtime controls reads and writes to the local persistence directory (`data/` and `radar/`).
+- **State Authority**: Production uses Supabase Postgres with verified operator sessions and row-level security. Local development without Supabase settings uses `data/` and `radar/` JSON files. See [deployment setup](DEPLOYMENT.md).
 - **Browser/Client Boundary**: The browser client receives projections of agent states, memory entries, and pending approvals. It cannot execute arbitrary server-side actions without going through validated route handlers.
 - **Audit Immutability**: Once an approval transition (`approved` or `rejected`) is committed, its status, timestamp, reviewer, and resolution comments cannot be modified.
 
@@ -68,15 +68,17 @@
 
 | Resource / Action | Browser Anonymous | Web Operator | Office Lead | Department Sub-Agent |
 |---|---|---|---|---|
-| View Office Floor / Agents | Allow (Read-only) | Allow | Allow | Allow |
+| View Office Floor / Agents | Deny | Allow | Allow | Allow |
 | Trigger Task / Simulation | Deny | Allow | Allow | Deny |
-| Read Shared Brain | Allow | Allow | Allow | Allow |
+| Read Shared Brain | Deny | Allow | Allow | Allow |
 | Write Shared Brain | Deny | Allow | Allow | Allow |
 | View Pending Approvals | Deny | Allow | Allow | Read-own |
 | Approve / Reject HITL Action | Deny | Allow | Deny | Deny |
 | Trigger Radar Scan | Deny | Allow | Allow | Deny |
 
 ## Writes and Concurrency
+
+- **Production**: `office_agents`, `office_memories`, `office_approvals`, and `office_radar` persist each entity separately. `office_operators` contains the administrator-managed email allowlist. `office_audit` is append-only through database triggers. Approval state and audit writes commit together; a conditional pending-state update prevents competing decisions. Agent updates affect one row, so different agents do not overwrite each other.
 
 - **Atomic File Updates**: Data files in `data/*.json` are written atomically via temp files and rename operations to prevent partial reads or corruptions.
 - **State Transition Guard**: An approval action validates that the current record status is strictly `'pending'`. Concurrent requests on an already resolved action return a `409 Conflict`.

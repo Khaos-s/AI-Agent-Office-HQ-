@@ -1,5 +1,7 @@
+import { withOperator } from "@/lib/supabase/server";
+import { readAgents, saveAgent } from "@/lib/persistent-agents";
 import { NextResponse } from "next/server";
-import { getAgentById, updateAgentStatus, routeAgent, getAllAgents } from "@/lib/agent-registry";
+import { getAgentById, updateAgentStatus } from "@/lib/agent-registry";
 import { createApproval } from "@/lib/approvals-store";
 import { addMemory } from "@/lib/memory-store";
 import { RiskLevel } from "@/types";
@@ -7,19 +9,21 @@ import { RiskLevel } from "@/types";
 export const dynamic = "force-dynamic";
 
 // Domain-specific prompt execution simulator with realistic responses and safety guardrails
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   try {
-    const body = await request.json();
+    const body = await request.json().catch(() => null);
+    if (!body || typeof body !== "object") return NextResponse.json({ success: false, error: "Invalid payload." }, { status: 400 });
     const { agentId, prompt } = body;
 
-    if (!agentId || !prompt) {
+    if (typeof agentId !== "string" || typeof prompt !== "string" || !prompt.trim() || prompt.length > 4000) {
       return NextResponse.json(
         { success: false, error: "Missing agentId or prompt." },
         { status: 400 }
       );
     }
 
-    const agent = getAgentById(agentId);
+    const agents = await readAgents();
+    const agent = getAgentById(agentId, agents);
     if (!agent) {
       return NextResponse.json(
         { success: false, error: `Agent "${agentId}" not found.` },
@@ -45,13 +49,13 @@ export async function POST(request: Request) {
     if (isFinancial || isPublicPublish) {
       // Create HITL approval request
       const risk: RiskLevel = isFinancial ? "high" : "medium";
-      const approval = createApproval({
+      const approval = await createApproval({
         agentId: agent.id,
         actionType: isFinancial ? "shopify_refund" : "public_dispatch",
         title: isFinancial
           ? `HITL Financial Gate: ${prompt.substring(0, 40)}`
           : `HITL Public Action: ${prompt.substring(0, 40)}`,
-        description: `Action initiated by Operator for @${agent.name}. Requires dual-operator verification before execution.`,
+        description: `Simulation requested for @${agent.name}. Requires operator approval; external execution is disabled.`,
         riskLevel: risk,
         payload: {
           prompt,
@@ -65,10 +69,12 @@ export async function POST(request: Request) {
         agent.id,
         "waiting_approval",
         `Awaiting HITL sign-off: "${prompt.substring(0, 36)}..."`,
-        `Held at HITL Gate: Requires operator authorization.`
+        `Held at HITL Gate: Requires operator authorization.`,
+        agents
       );
 
-      addMemory({
+      await saveAgent(agent);
+      await addMemory({
         agentId: agent.id,
         title: `HITL Gate Staged: ${prompt.substring(0, 30)}`,
         content: `Operator issued sensitive action: "${prompt}". Automatically queued in The Boss Desk for approval.`,
@@ -79,7 +85,7 @@ export async function POST(request: Request) {
         success: true,
         requiresHITL: true,
         approvalId: approval.id,
-        agent: getAgentById(agentId),
+        agent: getAgentById(agentId, agents),
         response: `[HITL GATE TRIGGERED] This operation requires human authorization. Action has been staged in The Boss Desk for sign-off.`,
       });
     }
@@ -169,13 +175,15 @@ export async function POST(request: Request) {
         updatedTask = `Processing autonomous task: "${prompt.substring(0, 40)}"`;
     }
 
-    // Update agent status and speech bubble
-    updateAgentStatus(agent.id, "working", updatedTask, aiResponse);
+    aiResponse = `[SIMULATION — no external action performed] ${aiResponse}`;
+    // Only the simulated agent state is persisted; no external tools are executed.
+    updateAgentStatus(agent.id, "working", updatedTask, aiResponse, agents);
+    await saveAgent(agent);
 
     // Record action into Shared Brain Memory
-    addMemory({
+    await addMemory({
       agentId: agent.id,
-      title: `Prompt Executed: ${prompt.substring(0, 30)}`,
+      title: `Prompt Simulation: ${prompt.substring(0, 30)}`,
       content: `Operator Prompt: "${prompt}"\nAgent Response: "${aiResponse}"`,
       tags: ["prompt", "ai-command", agent.department.toLowerCase()],
     });
@@ -183,7 +191,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       requiresHITL: false,
-      agent: getAgentById(agentId),
+      agent: getAgentById(agentId, agents),
       response: aiResponse,
     });
   } catch (error: any) {
@@ -194,3 +202,5 @@ export async function POST(request: Request) {
   }
 }
 
+
+export const POST = withOperator(handlePOST);

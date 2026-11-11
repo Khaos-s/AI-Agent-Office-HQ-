@@ -1,10 +1,11 @@
+import { withOperator } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { getRadarData, runRadarScan } from "@/lib/radar-engine";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
-  const radarItems = getRadarData();
+async function handleGET() {
+  const radarItems = await getRadarData();
   return NextResponse.json({
     success: true,
     count: radarItems.length,
@@ -13,7 +14,7 @@ export async function GET() {
   });
 }
 
-export async function POST() {
+async function handlePOST() {
   try {
     const updated = await runRadarScan();
     return NextResponse.json({
@@ -30,3 +31,6 @@ export async function POST() {
   }
 }
 
+
+export const GET = withOperator(handleGET);
+export const POST = withOperator(handlePOST);

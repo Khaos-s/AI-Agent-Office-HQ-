@@ -1,6 +1,7 @@
+import { withOperator } from "@/lib/supabase/server";
+import { readAgents, saveAgent } from "@/lib/persistent-agents";
 import { NextResponse } from "next/server";
 import {
-  getAllAgents,
   getAgentById,
   updateAgentStatus,
   routeAgent,
@@ -14,11 +15,11 @@ import { getApprovals } from "@/lib/approvals-store";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
-  updateAgentPositions();
-  const agents = getAllAgents();
-  const pendingApprovals = getApprovals("pending");
-  const stats = getCampusStats(pendingApprovals.length);
+async function handleGET() {
+  const agents = await readAgents();
+  updateAgentPositions(Date.now(), agents);
+  const pendingApprovals = await getApprovals("pending");
+  const stats = getCampusStats(pendingApprovals.length, agents);
 
   return NextResponse.json({
     success: true,
@@ -29,12 +30,14 @@ export async function GET() {
   });
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   try {
-    const body = await request.json();
+    const agents = await readAgents();
+    const body = await request.json().catch(() => null);
+    if (!body || typeof body !== "object" || Array.isArray(body)) return NextResponse.json({ success: false, error: "Invalid payload." }, { status: 400 });
     const { id, status, currentTask, speechBubble, destination, targetCoordinates } = body;
 
-    if (typeof id !== "string" || !getAgentById(id)) {
+    if (typeof id !== "string" || !getAgentById(id, agents)) {
       return NextResponse.json(
         { success: false, error: "Unknown or missing agent ID." },
         { status: 400 }
@@ -45,7 +48,8 @@ export async function POST(request: Request) {
       if (!targetCoordinates || typeof targetCoordinates.x !== "number" || typeof targetCoordinates.y !== "number" || !isInsideCampus(targetCoordinates.x, targetCoordinates.y)) {
         return NextResponse.json({ success: false, error: "Choose a position inside the office." }, { status: 400 });
       }
-      const moved = moveAgentToCoords(id, targetCoordinates.x, targetCoordinates.y);
+      const moved = moveAgentToCoords(id, targetCoordinates.x, targetCoordinates.y, agents);
+      await saveAgent(moved);
       return NextResponse.json({ success: true, agent: moved });
     }
 
@@ -53,12 +57,17 @@ export async function POST(request: Request) {
       if (!["desk", "pantry", "gym", "brain"].includes(destination)) {
         return NextResponse.json({ success: false, error: "Unknown destination." }, { status: 400 });
       }
-      const routed = routeAgent(id, destination as RoutingDestination);
+      const routed = routeAgent(id, destination as RoutingDestination, agents);
+      await saveAgent(routed);
       return NextResponse.json({ success: true, agent: routed });
     }
 
     if (status) {
-      const updated = updateAgentStatus(id, status, currentTask, speechBubble);
+      if (!["working","eating","gym","meeting","break","arriving","waiting_approval","awaiting_approval","idle","thinking","error"].includes(status) || (currentTask !== undefined && (typeof currentTask !== "string" || currentTask.length > 2000)) || (speechBubble !== undefined && (typeof speechBubble !== "string" || speechBubble.length > 2000))) {
+        return NextResponse.json({ success: false, error: "Invalid agent state." }, { status: 400 });
+      }
+      const updated = updateAgentStatus(id, status, currentTask, speechBubble, agents);
+      await saveAgent(updated);
       return NextResponse.json({ success: true, agent: updated });
     }
 
@@ -73,3 +82,6 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export const GET = withOperator(handleGET);
+export const POST = withOperator(handlePOST);

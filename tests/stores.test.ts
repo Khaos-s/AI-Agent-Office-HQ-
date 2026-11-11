@@ -26,7 +26,7 @@ describe("Agent Registry & Campus Roster", () => {
     resetAgentState();
   });
 
-  it("registers all 24 agents across campus rooms", () => {
+  it("registers all 24 agents across campus rooms", async () => {
     const agents = getAllAgents();
     expect(agents.length).toBe(24);
     const ids = agents.map((a) => a.id);
@@ -38,7 +38,7 @@ describe("Agent Registry & Campus Roster", () => {
     expect(ids).toContain("roy-jhan");
   });
 
-  it("enforces strict guardrails per department", () => {
+  it("enforces strict guardrails per department", async () => {
     const dev = getAgentById("blaze");
     expect(dev).toBeDefined();
     expect(dev?.disallowedTools).toContain("git_push_main");
@@ -49,7 +49,7 @@ describe("Agent Registry & Campus Roster", () => {
     expect(shop?.brief.mustNeverDo).toContain("HITL");
   });
 
-  it("updates agent status and task", () => {
+  it("updates agent status and task", async () => {
     const updated = updateAgentStatus("keiru", "working", "Scanning GitHub Radar");
     expect(updated.status).toBe("working");
     expect(updated.currentTask).toBe("Scanning GitHub Radar");
@@ -58,7 +58,7 @@ describe("Agent Registry & Campus Roster", () => {
     expect(fetched?.status).toBe("working");
   });
 
-  it("routes agents to rooms with target coordinates", () => {
+  it("routes agents to rooms with target coordinates", async () => {
     const routed = routeAgent("josiah", "brain");
     expect(routed.currentRoom).toBe("brain");
     expect(routed.status).toBe("meeting");
@@ -66,7 +66,7 @@ describe("Agent Registry & Campus Roster", () => {
     expect(routed.targetCoordinates?.x).toBeGreaterThan(350);
   });
 
-  it("calculates accurate campus stats matching live counter", () => {
+  it("calculates accurate campus stats matching live counter", async () => {
     const stats = getCampusStats(0);
     expect(stats.total).toBe(24);
     expect(stats.working).toBe(6);
@@ -83,11 +83,11 @@ describe("Shared Brain (Memory Store)", () => {
     resetMemoryStore();
   });
 
-  it("retrieves seeded memories and supports adding new ones", () => {
-    const initial = getMemories();
+  it("retrieves seeded memories and supports adding new ones", async () => {
+    const initial = await getMemories();
     expect(initial.length).toBeGreaterThan(0);
 
-    const newEntry = addMemory({
+    const newEntry = await addMemory({
       agentId: "research",
       title: "New AI Framework Discovery",
       content: "Discovered Claw3D and OpenClaw architecture.",
@@ -97,16 +97,16 @@ describe("Shared Brain (Memory Store)", () => {
     expect(newEntry.id).toBeDefined();
     expect(newEntry.createdAt).toBeDefined();
 
-    const tagged = getMemories("ai-agents");
+    const tagged = await getMemories("ai-agents");
     expect(tagged.some((m) => m.id === newEntry.id)).toBe(true);
   });
 
-  it("self-heals if memory store file is corrupted or missing", () => {
-    const dataDir = path.resolve(process.cwd(), "data");
+  it("self-heals if memory store file is corrupted or missing", async () => {
+    const dataDir = path.resolve(process.env.OFFICE_DATA_DIR || process.cwd(), "data");
     const memFile = path.join(dataDir, "memory.json");
     fs.writeFileSync(memFile, "{ corrupt json ...", "utf-8");
 
-    const memories = getMemories();
+    const memories = await getMemories();
     expect(memories.length).toBeGreaterThan(0);
   });
 });
@@ -116,8 +116,8 @@ describe("HITL Approvals Store", () => {
     resetApprovalsStore();
   });
 
-  it("manages pending approvals and enforces state machine transitions", () => {
-    const item = createApproval({
+  it("manages pending approvals and enforces state machine transitions", async () => {
+    const item = await createApproval({
       agentId: "gabriel",
       actionType: "shopify_refund",
       title: "Refund Order #1042",
@@ -128,23 +128,23 @@ describe("HITL Approvals Store", () => {
 
     expect(item.status).toBe("pending");
 
-    const resolved = resolveApproval(item.id, "approved", "Chief Operator", "Customer photos verified");
+    const resolved = await resolveApproval(item.id, "approved", "Chief Operator", "Customer photos verified");
     expect(resolved.status).toBe("approved");
     expect(resolved.resolvedBy).toBe("Chief Operator");
     expect(resolved.resolvedAt).toBeDefined();
 
     // Double approval must throw conflict error
-    expect(() => {
-      resolveApproval(item.id, "rejected", "Chief Operator");
-    }).toThrow(/already resolved|conflict/i);
+    await expect(async () => {
+      await resolveApproval(item.id, "rejected", "Chief Operator");
+    }).rejects.toThrow(/already resolved|conflict/i);
   });
 
-  it("self-heals if approvals store file is corrupted or missing", () => {
-    const dataDir = path.resolve(process.cwd(), "data");
+  it("self-heals if approvals store file is corrupted or missing", async () => {
+    const dataDir = path.resolve(process.env.OFFICE_DATA_DIR || process.cwd(), "data");
     const appFile = path.join(dataDir, "approvals.json");
     fs.writeFileSync(appFile, "INVALID JSON DATA", "utf-8");
 
-    const approvals = getApprovals();
+    const approvals = await getApprovals();
     expect(approvals.length).toBeGreaterThan(0);
   });
 });
