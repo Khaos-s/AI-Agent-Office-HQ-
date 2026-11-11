@@ -1,5 +1,29 @@
 [
   {
+    "agentId": "gabriel",
+    "title": "HITL Gate Staged: Issue customer refund of $150 ",
+    "content": "Operator issued sensitive action: \"Issue customer refund of $150 for damaged goods\". Automatically queued in The Boss Desk for approval.",
+    "tags": [
+      "hitl",
+      "security",
+      "commerce"
+    ],
+    "id": "mem-mwboriwv-ujhz",
+    "createdAt": "2026-11-11T05:36:07.807Z"
+  },
+  {
+    "agentId": "blaze",
+    "title": "Prompt Executed: Run Vitest test suite and repo",
+    "content": "Operator Prompt: \"Run Vitest test suite and report coverage\"\nAgent Response: \"[Full-Stack Lead] Coding session initiated in isolated worktree. Shaders compiled, unit tests passing. Branch staged for pull request.\"",
+    "tags": [
+      "prompt",
+      "ai-command",
+      "engineering"
+    ],
+    "id": "mem-mwboriwk-09r4",
+    "createdAt": "2026-11-11T05:36:07.796Z"
+  },
+  {
     "id": "mem-001",
     "agentId": "lead",
     "title": "Office Architecture Standard",

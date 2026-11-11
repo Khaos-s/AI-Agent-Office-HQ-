@@ -1,5 +1,21 @@
 [
   {
+    "agentId": "gabriel",
+    "actionType": "shopify_refund",
+    "title": "HITL Financial Gate: Issue customer refund of $150 for damage",
+    "description": "Action initiated by Operator for @Gabriel. Requires dual-operator verification before execution.",
+    "riskLevel": "high",
+    "payload": {
+      "prompt": "Issue customer refund of $150 for damaged goods",
+      "agentDepartment": "Commerce",
+      "timestamp": "2026-11-11T05:36:07.801Z",
+      "requestedBy": "Operator Console"
+    },
+    "id": "app-mwboriwr-v6gz",
+    "status": "pending",
+    "createdAt": "2026-11-11T05:36:07.803Z"
+  },
+  {
     "id": "app-001",
     "agentId": "tbx-shop",
     "actionType": "shopify_refund",

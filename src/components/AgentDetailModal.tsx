@@ -24,12 +24,37 @@ export const AgentDetailModal: React.FC<AgentDetailModalProps> = ({
 
   const handleSimulateWork = async () => {
     setIsUpdating(true);
-    await onUpdateStatus(
-      agent.id,
-      "working",
-      taskInput || "Executing autonomous department task",
-      "Task dispatched. Working at desk."
-    );
+    const promptToRun = taskInput.trim() || "Executing autonomous department task";
+    try {
+      const res = await fetch("/api/agent/prompt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentId: agent.id, prompt: promptToRun }),
+      });
+      const data = await res.json();
+      if (data.success && data.agent) {
+        await onUpdateStatus(
+          agent.id,
+          data.agent.status,
+          data.agent.currentTask,
+          data.agent.speechBubble
+        );
+      } else {
+        await onUpdateStatus(
+          agent.id,
+          "working",
+          promptToRun,
+          "Task dispatched. Working at desk."
+        );
+      }
+    } catch {
+      await onUpdateStatus(
+        agent.id,
+        "working",
+        promptToRun,
+        "Task dispatched. Working at desk."
+      );
+    }
     setIsUpdating(false);
     setTaskInput("");
   };
@@ -90,7 +115,7 @@ export const AgentDetailModal: React.FC<AgentDetailModalProps> = ({
               className={`font-bold uppercase ${
                 agent.status === "working"
                   ? "text-emerald-400"
-                  : agent.status === "awaiting_approval"
+                  : agent.status === "waiting_approval" || (agent.status as string) === "awaiting_approval"
                   ? "text-amber-400"
                   : "text-slate-300"
               }`}

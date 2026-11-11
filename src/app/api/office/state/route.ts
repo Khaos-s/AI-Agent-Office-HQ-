@@ -6,8 +6,8 @@ import {
   moveAgentToCoords,
   updateAgentPositions,
   getCampusStats,
-  RoutingDestination,
 } from "@/lib/agent-registry";
+import { RoutingDestination } from "@/types";
 import { getApprovals } from "@/lib/approvals-store";
 
 export const dynamic = "force-dynamic";

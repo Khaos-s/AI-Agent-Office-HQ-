@@ -59,5 +59,40 @@ describe("HITL Action Execution Handlers", () => {
     expect(receipt.messageId).toBeDefined();
     expect(receipt.status).toBe("queued_for_delivery");
   });
+
+  it("handles AI direct prompt and triggers HITL gate on sensitive action", async () => {
+    const { POST } = await import("@/app/api/agent/prompt/route");
+
+    // Standard dev task
+    const standardReq = new Request("http://localhost/api/agent/prompt", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        agentId: "blaze",
+        prompt: "Run Vitest test suite and report coverage",
+      }),
+    });
+    const standardRes = await POST(standardReq);
+    const standardData = await standardRes.json();
+    expect(standardData.success).toBe(true);
+    expect(standardData.agent.status).toBe("working");
+    expect(standardData.response).toContain("Full-Stack Lead");
+
+    // Financial action triggering HITL
+    const hitlReq = new Request("http://localhost/api/agent/prompt", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        agentId: "gabriel",
+        prompt: "Issue customer refund of $150 for damaged goods",
+      }),
+    });
+    const hitlRes = await POST(hitlReq);
+    const hitlData = await hitlRes.json();
+    expect(hitlData.success).toBe(true);
+    expect(hitlData.requiresHITL).toBe(true);
+    expect(hitlData.agent.status).toBe("waiting_approval");
+    expect(hitlData.response).toContain("HITL GATE TRIGGERED");
+  });
 });
 

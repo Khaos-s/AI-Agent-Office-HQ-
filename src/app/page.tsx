@@ -16,6 +16,7 @@ import { HQSidebar }       from "@/components/HQSidebar";
 import { HITLQueueModal }  from "@/components/HITLQueueModal";
 import { BrainVaultModal } from "@/components/BrainVaultModal";
 import { AgentDetailModal } from "@/components/AgentDetailModal";
+import { FloatingAgentCommandDock } from "@/components/FloatingAgentCommandDock";
 import { CheckCircle2, AlertCircle } from "lucide-react";
 
 type Notif = { id: number; msg: string; ok: boolean };
@@ -196,6 +197,13 @@ export default function Home() {
     }
   };
 
+  const handlePromptSuccess = (updatedAgent: AgentProfile, responseMsg: string) => {
+    setAgents((prev) => prev.map((a) => (a.id === updatedAgent.id ? updatedAgent : a)));
+    setSelectedAgent(updatedAgent);
+    push(`@${updatedAgent.name}: ${responseMsg.length > 45 ? responseMsg.substring(0, 42) + "..." : responseMsg}`);
+    fetchData();
+  };
+
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-[#07090f]">
@@ -224,6 +232,14 @@ export default function Home() {
           onMoveAgentDirectly={handleMoveXY}
         />
 
+        {/* Floating Quick Command Dock */}
+        <FloatingAgentCommandDock
+          agent={selectedAgent}
+          onSuccess={handlePromptSuccess}
+          onOpenApprovals={() => setApprovalsOpen(true)}
+          onOpenDetail={() => setDetailOpen(true)}
+        />
+
         {/* Slide-over command panel */}
         <HQSidebar
           stats={campusStats}
@@ -233,6 +249,7 @@ export default function Home() {
           onRouteAgent={handleRoute}
           onOpenApprovals={() => setApprovalsOpen(true)}
           onTriggerTestHITL={() => handleTriggerHITL(selectedAgent?.id ?? "gabriel")}
+          onPromptSuccess={handlePromptSuccess}
         />
       </main>
 

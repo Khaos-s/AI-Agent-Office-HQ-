@@ -152,31 +152,32 @@ export interface IsometricDesk {
 }
 
 export const CAMPUS_DESKS: IsometricDesk[] = [
-  // Focus Work (Purple)
+  // Focus Work (Purple - Julian & Bonnie)
   { x: 260, y: 165, rotation: "left", hasMonitors: true },
-  { x: 310, y: 135, rotation: "left", hasMonitors: true },
-  { x: 320, y: 185, rotation: "left", hasMonitors: true },
+  { x: 310, y: 150, rotation: "left", hasMonitors: true },
 
-  // Server Bay (Blue)
+  // Server Bay (Blue - Arwin, Nelmar, John Lloyd)
   { x: 480, y: 130, rotation: "right", hasMonitors: true },
-  { x: 450, y: 165, rotation: "right", hasMonitors: true },
-  { x: 500, y: 195, rotation: "right", hasMonitors: true },
-  { x: 560, y: 165, rotation: "right", hasMonitors: true },
+  { x: 450, y: 170, rotation: "right", hasMonitors: true },
+  { x: 520, y: 175, rotation: "right", hasMonitors: true },
 
-  // Engineering Bay (Green)
-  { x: 550, y: 205, rotation: "right", hasMonitors: true },
-  { x: 590, y: 235, rotation: "right", hasMonitors: true },
-  { x: 620, y: 275, rotation: "right", hasMonitors: true },
+  // Engineering Bay (Green - Blaze, Mark, Lance, Christian)
+  { x: 550, y: 245, rotation: "right", hasMonitors: true },
+  { x: 600, y: 255, rotation: "right", hasMonitors: true },
+  { x: 565, y: 290, rotation: "right", hasMonitors: true },
+  { x: 615, y: 295, rotation: "right", hasMonitors: true },
 
-  // Workstations Bay (Magenta)
-  { x: 550, y: 350, rotation: "right", hasMonitors: true },
-  { x: 590, y: 380, rotation: "right", hasMonitors: true },
-  { x: 520, y: 390, rotation: "right", hasMonitors: true },
+  // Operations & Cloud Bay (Magenta - Ferwi, Jayson, Jo Vincent, Gabriel)
+  { x: 470, y: 365, rotation: "right", hasMonitors: true },
+  { x: 520, y: 375, rotation: "right", hasMonitors: true },
+  { x: 570, y: 385, rotation: "right", hasMonitors: true },
+  { x: 620, y: 345, rotation: "right", hasMonitors: true },
 
-  // Operations Bay (Teal)
-  { x: 440, y: 420, rotation: "left", hasMonitors: true },
-  { x: 470, y: 420, rotation: "left", hasMonitors: true },
-  { x: 500, y: 420, rotation: "left", hasMonitors: true },
+  // Research & Analytics Bay (Teal - Keiru, Ryan, Mary Grace, Glor)
+  { x: 320, y: 430, rotation: "left", hasMonitors: true },
+  { x: 365, y: 430, rotation: "left", hasMonitors: true },
+  { x: 330, y: 465, rotation: "left", hasMonitors: true },
+  { x: 375, y: 465, rotation: "left", hasMonitors: true },
 ];
 
 export interface RippleEffect {
@@ -810,10 +811,36 @@ function drawAgentSprite(
   const bob = isWalking ? Math.sin(tick * 0.45) * 2.5 : Math.sin(tick * 0.06) * 0.8;
   const cy = y + bob;
 
-  // 4. Chibi Isometric Character Sprite
+  // 4. Chibi Isometric Character Sprite with Department Accessories
+  // Hair color & skin tone
+  const skinTone = agent.department === "Executive" || agent.id === "blaze" ? "#fed7aa" : "#fed7aa";
+  const hairColor = agent.id === "josiah" ? "#312e81" : agent.id === "bonnie" || agent.id === "mary-grace" ? "#7c2d12" : "#0f172a";
+
   // Body / Outfit
   ctx.fillStyle = agent.color;
   ctx.fillRect(x - 5, cy - 4, 10, 8);
+
+  // Department-specific outfit trim
+  if (agent.department === "Executive") {
+    // Executive Suit collar & tie
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(x - 1, cy - 4, 2, 4);
+    ctx.fillStyle = "#06b6d4";
+    ctx.fillRect(x - 1, cy - 2, 2, 4);
+  } else if (agent.department === "Engineering") {
+    // Dev Hoodie pocket & drawstrings
+    ctx.fillStyle = "rgba(0, 0, 0, 0.25)";
+    ctx.fillRect(x - 3, cy, 6, 3);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(x - 2, cy - 4, 1, 3);
+    ctx.fillRect(x + 1, cy - 4, 1, 3);
+  } else if (agent.department === "Database" || agent.department === "Security") {
+    // Tactical cyber harness badge
+    ctx.fillStyle = "#020617";
+    ctx.fillRect(x - 3, cy - 3, 6, 2);
+    ctx.fillStyle = "#38bdf8";
+    ctx.fillRect(x - 2, cy - 1, 4, 2);
+  }
 
   // Legs / Feet
   ctx.fillStyle = "#1e293b";
@@ -826,18 +853,50 @@ function drawAgentSprite(
     ctx.fillRect(x + 1, cy + 4, 3, 3);
   }
 
-  // Head (Peach skin tone)
-  ctx.fillStyle = "#fed7aa";
+  // Head
+  ctx.fillStyle = skinTone;
   ctx.fillRect(x - 4, cy - 12, 8, 8);
 
   // Hair / Hat
-  ctx.fillStyle = "#0f172a";
+  ctx.fillStyle = hairColor;
   ctx.fillRect(x - 5, cy - 14, 10, 4);
 
   // Eyes
   ctx.fillStyle = "#020617";
   ctx.fillRect(x - 2, cy - 9, 1.5, 2);
   ctx.fillRect(x + 1, cy - 9, 1.5, 2);
+
+  // Department Accessories (Glasses, Visors, Headsets, Headbands)
+  if (agent.department === "Security" || agent.id === "arwin" || agent.id === "christian") {
+    // Glasses / Cyber HUD Visor
+    ctx.fillStyle = agent.id === "john-lloyd" ? "#38bdf8" : "#94a3b8";
+    ctx.fillRect(x - 3, cy - 9, 3, 2);
+    ctx.fillRect(x + 1, cy - 9, 3, 2);
+    ctx.fillRect(x, cy - 9, 1, 1);
+  } else if (agent.department === "Executive" || agent.id === "gian" || agent.id === "neil-mar") {
+    // Command Headset & Mic boom
+    ctx.fillStyle = "#06b6d4";
+    ctx.fillRect(x - 5, cy - 11, 2, 4);
+    ctx.fillRect(x - 4, cy - 7, 3, 1);
+  } else if (agent.status === "gym") {
+    // Athletic Headband
+    ctx.fillStyle = "#38bdf8";
+    ctx.fillRect(x - 5, cy - 13, 10, 2);
+  } else if (agent.status === "eating") {
+    // Coffee mug held in hand
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(x + 4, cy - 2, 3, 4);
+    ctx.fillStyle = "#78350f";
+    ctx.fillRect(x + 5, cy - 2, 1, 1);
+  }
+
+  // Active typing hands when working
+  if (agent.status === "working") {
+    const handBob = Math.sin(tick * 0.4) * 1;
+    ctx.fillStyle = skinTone;
+    ctx.fillRect(x - 4, cy + 1 + handBob, 2, 2);
+    ctx.fillRect(x + 2, cy + 1 - handBob, 2, 2);
+  }
 
   // 5. Status color dot matching screenshot
   let dotColor = "#22c55e"; // Working (green)
@@ -886,24 +945,59 @@ function drawAgentSprite(
   ctx.fillStyle = isSelected ? "#ffffff" : "#f1f5f9";
   ctx.fillText(agent.name, tagX + 13, tagY + 11);
 
-  // 7. Floating Speech Bubble (if hovered or speaking)
-  if ((isHovered || agent.speechBubble) && agent.speechBubble) {
+  // 7. Floating Speech Bubble (ONLY rendered when selected or hovered to avoid canvas clutter)
+  if ((isSelected || isHovered) && agent.speechBubble) {
     const bubbleText = agent.speechBubble;
-    ctx.font = "9px sans-serif";
+    ctx.font = "bold 9px monospace, sans-serif";
     const bubbleMetrics = ctx.measureText(bubbleText);
-    const bubbleW = Math.min(Math.max(bubbleMetrics.width + 12, 60), 160);
-    const bubbleH = 18;
+    const bubbleW = Math.min(Math.max(bubbleMetrics.width + 16, 70), 220);
+    const bubbleH = 20;
     const bubbleX = x - bubbleW / 2;
-    const bubbleY = tagY - bubbleH - 4;
+    const bubbleY = tagY - bubbleH - 7;
 
-    ctx.fillStyle = "rgba(15, 23, 42, 0.95)";
-    ctx.strokeStyle = "#38bdf8";
-    ctx.lineWidth = 1;
-    ctx.fillRect(bubbleX, bubbleY, bubbleW, bubbleH);
-    ctx.strokeRect(bubbleX, bubbleY, bubbleW, bubbleH);
+    ctx.save();
+    if (isSelected) {
+      ctx.shadowColor = "#38bdf8";
+      ctx.shadowBlur = 6;
+    }
 
-    ctx.fillStyle = "#38bdf8";
-    ctx.fillText(bubbleText.substring(0, 24), bubbleX + 6, bubbleY + 12);
+    ctx.fillStyle = "rgba(10, 15, 30, 0.95)";
+    ctx.strokeStyle = isSelected ? "#38bdf8" : "#475569";
+    ctx.lineWidth = isSelected ? 1.5 : 1;
+
+    // Speech bubble rounded box
+    ctx.beginPath();
+    const r = 4;
+    ctx.moveTo(bubbleX + r, bubbleY);
+    ctx.lineTo(bubbleX + bubbleW - r, bubbleY);
+    ctx.quadraticCurveTo(bubbleX + bubbleW, bubbleY, bubbleX + bubbleW, bubbleY + r);
+    ctx.lineTo(bubbleX + bubbleW, bubbleY + bubbleH - r);
+    ctx.quadraticCurveTo(bubbleX + bubbleW, bubbleY + bubbleH, bubbleX + bubbleW - r, bubbleY + bubbleH);
+    ctx.lineTo(bubbleX + r, bubbleY + bubbleH);
+    ctx.quadraticCurveTo(bubbleX, bubbleY + bubbleH, bubbleX, bubbleY + bubbleH - r);
+    ctx.lineTo(bubbleX, bubbleY + r);
+    ctx.quadraticCurveTo(bubbleX, bubbleY, bubbleX + r, bubbleY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Downward arrow pointer pointing directly at name tag
+    ctx.beginPath();
+    ctx.moveTo(x - 4, bubbleY + bubbleH);
+    ctx.lineTo(x, bubbleY + bubbleH + 5);
+    ctx.lineTo(x + 4, bubbleY + bubbleH);
+    ctx.closePath();
+    ctx.fillStyle = "rgba(10, 15, 30, 0.95)";
+    ctx.fill();
+    ctx.strokeStyle = isSelected ? "#38bdf8" : "#475569";
+    ctx.stroke();
+
+    ctx.restore();
+
+    // Speech text
+    ctx.fillStyle = isSelected ? "#38bdf8" : "#f1f5f9";
+    const displayStr = bubbleText.length > 32 ? bubbleText.substring(0, 30) + "…" : bubbleText;
+    ctx.fillText(displayStr, bubbleX + 8, bubbleY + 13);
   }
 
   ctx.restore();

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AgentProfile, CampusStats, RoutingDestination } from "@/types";
 import { X, ShieldAlert, ArrowRight } from "lucide-react";
+import { AIPromptConsole } from "@/components/AIPromptConsole";
 
 const STATUS_COLOR: Record<string, string> = {
   working:          "#bef264",
@@ -41,6 +42,7 @@ interface HQSidebarProps {
   onRouteAgent: (agentId: string, destination: RoutingDestination) => void;
   onOpenApprovals: () => void;
   onTriggerTestHITL?: () => void;
+  onPromptSuccess?: (agent: AgentProfile, responseMsg: string) => void;
 }
 
 export const HQSidebar: React.FC<HQSidebarProps> = ({
@@ -51,6 +53,7 @@ export const HQSidebar: React.FC<HQSidebarProps> = ({
   onRouteAgent,
   onOpenApprovals,
   onTriggerTestHITL,
+  onPromptSuccess,
 }) => {
   const [open, setOpen]       = useState(true);
   const [prevStats, setPrev]  = useState(stats);
@@ -275,6 +278,17 @@ export const HQSidebar: React.FC<HQSidebarProps> = ({
                   </motion.div>
                 )}
               </AnimatePresence>
+
+              {/* AI Command Terminal */}
+              {agent && (
+                <div className="mt-3">
+                  <AIPromptConsole
+                    agent={agent}
+                    onSuccess={onPromptSuccess}
+                    onOpenApprovals={onOpenApprovals}
+                  />
+                </div>
+              )}
 
               {/* Routing buttons */}
               {agent && (
