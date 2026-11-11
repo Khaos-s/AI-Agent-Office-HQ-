@@ -36,7 +36,7 @@ $$\text{Radar Score} = (\text{Stars Growth Normalized} \times 0.40) + (\text{Top
 
 ## Freshness and Asynchronous Routines
 
-- **GitHub Radar**: Defaults to automatic 6:00 AM daily scans, with manual on-demand trigger available from the web dashboard.
+- **GitHub Radar**: The web dashboard manually refreshes scores from sample inputs. Live discovery and scheduled scans are not connected.
 - **Office Canvas Polling**: Client polls `/api/office/state` every 2,500ms to update character positions, speech bubbles, and queue badges without page reloads.
 
 ## Verification Matrix

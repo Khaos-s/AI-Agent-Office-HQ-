@@ -21,9 +21,9 @@
 - **Framework**: Next.js 14+ (App Router), React 18+, TypeScript.
 - **Styling**: Tailwind CSS with custom pixel-art and HUD palette.
 - **Icons**: Lucide React.
-- **Persistence**: Local JSON stores (`data/memory.json`, `data/approvals.json`, `radar/data.json`) with atomic file writes and self-healing initialization; designed for seamless migration to Supabase/PostgreSQL.
+- **Persistence**: Supabase/PostgreSQL in production, with verified operator sign-in and row-level security. Local development without Supabase settings uses self-healing JSON stores. See [deployment setup](DEPLOYMENT.md).
 - **Testing**: Vitest for unit, store, API, and calculation verification.
-- **Runtime**: Node.js 18+ on Windows / macOS / Linux.
+- **Runtime**: Node.js 24 on Vercel; local Node.js 20+ on Windows / macOS / Linux.
 
 ## Code Map
 
@@ -41,7 +41,7 @@
 ## Current Decisions and Limitations
 
 - Out-of-the-box operation runs on an interactive deterministic simulation engine with realistic agent task lifecycles, enabling full end-to-end testing without paid LLM API costs.
-- Pluggable adapters allow connecting live Claude/Anthropic APIs or Claude Code CLI runners via environment configuration.
+- Live model adapters and external action integrations are not connected.
 - Approved HITL actions execute via sandboxed handlers generating verified receipts, preventing unintended live charges during local evaluation.
 
 ## Delivery

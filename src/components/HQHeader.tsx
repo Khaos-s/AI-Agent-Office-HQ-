@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RoomLocation, AgentProfile } from "@/types";
 import { Brain, ChevronDown, X } from "lucide-react";
+import { browserDatabase } from "@/lib/supabase/client";
 
 const NAV_ROOMS: { id: RoomLocation; label: string }[] = [
   { id: "overview",    label: "Overview"      },
@@ -93,6 +94,7 @@ export const HQHeader: React.FC<HQHeaderProps> = ({
 
       {/* RIGHT — Clock, Brain, Agents, HITL */}
       <div className="flex items-center gap-2">
+        {process.env.NEXT_PUBLIC_SUPABASE_URL && <button onClick={async () => { const { error } = await browserDatabase().auth.signOut(); if (error) window.alert("Sign-out failed. Please try again."); else window.location.assign("/login"); }} className="min-h-9 rounded-md border border-white/15 px-2 text-[10px] text-slate-300">Sign out</button>}
         {/* Live clock */}
         <span className="hidden select-none flex-col items-end leading-tight 2xl:flex">
           <span className="text-[11px] font-mono text-slate-200">{time}</span>
@@ -101,11 +103,12 @@ export const HQHeader: React.FC<HQHeaderProps> = ({
 
         {/* Brain vault */}
         <button
+          aria-label="Brain Vault"
           onClick={onOpenBrainVault}
           className="flex items-center gap-1.5 rounded-md border border-sky-500/30 bg-sky-500/10 px-2.5 min-h-9 py-1 text-[10px] font-semibold text-sky-300 transition hover:bg-sky-500/20"
         >
           <Brain className="h-3 w-3" />
-          Brain Vault
+          <span className="hidden sm:inline">Brain Vault</span>
         </button>
 
         {/* Pending approvals badge */}

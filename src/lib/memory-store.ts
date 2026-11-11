@@ -1,8 +1,9 @@
+import { getDatabase } from "./supabase/server";
 import fs from "fs";
 import path from "path";
 import { MemoryEntry } from "@/types";
 
-const DATA_DIR = path.resolve(process.cwd(), "data");
+const DATA_DIR = path.resolve(process.env.OFFICE_DATA_DIR || process.cwd(), "data");
 const MEMORY_FILE = path.join(DATA_DIR, "memory.json");
 
 export const SEED_MEMORIES: MemoryEntry[] = [
@@ -49,7 +50,14 @@ function ensureFileExists(): void {
   }
 }
 
-export function getMemories(tag?: string): MemoryEntry[] {
+export async function getMemories(tag?: string): Promise<MemoryEntry[]> {
+  const db = getDatabase();
+  if (db) {
+    const { data, error } = await db.from("office_memories").select("data").order("data->>createdAt", { ascending: false });
+    if (error) throw new Error("Could not load shared memory.");
+    const entries = data.map(row => row.data as MemoryEntry);
+    return tag ? entries.filter(m => m.tags.some(t => t.toLowerCase().includes(tag.toLowerCase()))) : entries;
+  }
   ensureFileExists();
   try {
     const raw = fs.readFileSync(MEMORY_FILE, "utf-8");
@@ -67,13 +75,19 @@ export function getMemories(tag?: string): MemoryEntry[] {
   }
 }
 
-export function addMemory(entry: Omit<MemoryEntry, "id" | "createdAt">): MemoryEntry {
-  const memories = getMemories();
+export async function addMemory(entry: Omit<MemoryEntry, "id" | "createdAt">): Promise<MemoryEntry> {
   const newMemory: MemoryEntry = {
     ...entry,
     id: `mem-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`,
     createdAt: new Date().toISOString(),
   };
+  const db = getDatabase();
+  if (db) {
+    const { error } = await db.from("office_memories").insert({ id: newMemory.id, data: newMemory });
+    if (error) throw new Error("Could not save shared memory.");
+    return newMemory;
+  }
+  const memories = await getMemories();
   memories.unshift(newMemory);
 
   const tempFile = `${MEMORY_FILE}.tmp`;

@@ -1,8 +1,9 @@
+import { getDatabase } from "./supabase/server";
 import fs from "fs";
 import path from "path";
 import { HITLApproval, ApprovalStatus } from "@/types";
 
-const DATA_DIR = path.resolve(process.cwd(), "data");
+const DATA_DIR = path.resolve(process.env.OFFICE_DATA_DIR || process.cwd(), "data");
 const APPROVALS_FILE = path.join(DATA_DIR, "approvals.json");
 
 export const SEED_APPROVALS: HITLApproval[] = [
@@ -65,7 +66,15 @@ function ensureFileExists(): void {
   }
 }
 
-export function getApprovals(status?: ApprovalStatus): HITLApproval[] {
+export async function getApprovals(status?: ApprovalStatus): Promise<HITLApproval[]> {
+  const db = getDatabase();
+  if (db) {
+    let query = db.from("office_approvals").select("data").order("data->>createdAt", { ascending: false });
+    if (status) query = query.eq("data->>status", status);
+    const { data, error } = await query;
+    if (error) throw new Error("Could not load the approval queue.");
+    return data.map(row => row.data as HITLApproval);
+  }
   ensureFileExists();
   try {
     const raw = fs.readFileSync(APPROVALS_FILE, "utf-8");
@@ -79,13 +88,12 @@ export function getApprovals(status?: ApprovalStatus): HITLApproval[] {
   }
 }
 
-export function getApprovalById(id: string): HITLApproval | undefined {
-  const approvals = getApprovals();
+export async function getApprovalById(id: string): Promise<HITLApproval | undefined> {
+  const approvals = await getApprovals();
   return approvals.find((a) => a.id === id);
 }
 
-export function createApproval(item: Omit<HITLApproval, "id" | "createdAt" | "status">): HITLApproval {
-  const approvals = getApprovals();
+export async function createApproval(item: Omit<HITLApproval, "id" | "createdAt" | "status">): Promise<HITLApproval> {
   const newApproval: HITLApproval = {
     ...item,
     id: `app-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`,
@@ -93,6 +101,13 @@ export function createApproval(item: Omit<HITLApproval, "id" | "createdAt" | "st
     createdAt: new Date().toISOString(),
   };
 
+  const db = getDatabase();
+  if (db) {
+    const { error } = await db.from("office_approvals").insert({ id: newApproval.id, data: newApproval });
+    if (error) throw new Error("Could not save the approval request.");
+    return newApproval;
+  }
+  const approvals = await getApprovals();
   approvals.unshift(newApproval);
   const tempFile = `${APPROVALS_FILE}.tmp`;
   fs.writeFileSync(tempFile, JSON.stringify(approvals, null, 2), "utf-8");
@@ -101,14 +116,14 @@ export function createApproval(item: Omit<HITLApproval, "id" | "createdAt" | "st
   return newApproval;
 }
 
-export function resolveApproval(
+export async function resolveApproval(
   id: string,
   status: "approved" | "rejected",
   reviewer: string,
   comment?: string,
   executionReceipt?: Record<string, any>
-): HITLApproval {
-  const approvals = getApprovals();
+): Promise<HITLApproval> {
+  const approvals = await getApprovals();
   const target = approvals.find((a) => a.id === id);
 
   if (!target) {
@@ -125,10 +140,16 @@ export function resolveApproval(
   if (comment) target.resolutionComment = comment;
   if (executionReceipt) target.executionReceipt = executionReceipt;
 
+  const db = getDatabase();
+  if (db) {
+    const { data, error } = await db.from("office_approvals").update({ data: target }).eq("id", id).eq("data->>status", "pending").select("data").maybeSingle();
+    if (error) throw new Error(error.code === "40001" ? "Approval already resolved." : "Could not save the approval decision.");
+    if (!data) throw new Error("Approval already resolved.");
+    return data.data as HITLApproval;
+  }
   const tempFile = `${APPROVALS_FILE}.tmp`;
   fs.writeFileSync(tempFile, JSON.stringify(approvals, null, 2), "utf-8");
   fs.renameSync(tempFile, APPROVALS_FILE);
-
   return target;
 }
 

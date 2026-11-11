@@ -562,12 +562,12 @@ export function getAllAgents(): AgentProfile[] {
   return agentsState;
 }
 
-export function getAgentById(id: string): AgentProfile | undefined {
-  return agentsState.find((a) => a.id === id);
+export function getAgentById(id: string, agents = agentsState): AgentProfile | undefined {
+  return agents.find((a) => a.id === id);
 }
 
-export function moveAgentToCoords(id: string, x: number, y: number): AgentProfile {
-  const agent = agentsState.find((a) => a.id === id);
+export function moveAgentToCoords(id: string, x: number, y: number, agents = agentsState): AgentProfile {
+  const agent = agents.find((a) => a.id === id);
   if (!agent) {
     throw new Error(`Agent with id "${id}" not found.`);
   }
@@ -582,8 +582,8 @@ export function moveAgentToCoords(id: string, x: number, y: number): AgentProfil
   return agent;
 }
 
-export function routeAgent(id: string, destination: RoutingDestination): AgentProfile {
-  const agent = agentsState.find((a) => a.id === id);
+export function routeAgent(id: string, destination: RoutingDestination, agents = agentsState): AgentProfile {
+  const agent = agents.find((a) => a.id === id);
   if (!agent) {
     throw new Error(`Agent with id "${id}" not found.`);
   }
@@ -602,7 +602,7 @@ export function routeAgent(id: string, destination: RoutingDestination): AgentPr
       break;
 
     case "pantry":
-      agent.targetCoordinates = project(80 + agentsState.indexOf(agent) % 4 * 42, 460 + Math.floor(agentsState.indexOf(agent) / 4) * 12);
+      agent.targetCoordinates = project(80 + agents.indexOf(agent) % 4 * 42, 460 + Math.floor(agents.indexOf(agent) / 4) * 12);
       agent.currentRoom = "pantry";
       agent.status = "eating";
       agent.currentTask = "Grabbed a coffee and catching up in Pantry & Canteen";
@@ -610,7 +610,7 @@ export function routeAgent(id: string, destination: RoutingDestination): AgentPr
       break;
 
     case "gym":
-      agent.targetCoordinates = project(80 + agentsState.indexOf(agent) % 4 * 42, 740 + Math.floor(agentsState.indexOf(agent) / 4) * 12);
+      agent.targetCoordinates = project(80 + agents.indexOf(agent) % 4 * 42, 740 + Math.floor(agents.indexOf(agent) / 4) * 12);
       agent.currentRoom = "gym";
       agent.status = "gym";
       agent.currentTask = "Active recovery workout in Rec & Gym";
@@ -618,7 +618,7 @@ export function routeAgent(id: string, destination: RoutingDestination): AgentPr
       break;
 
     case "brain":
-      agent.targetCoordinates = project(350 + agentsState.indexOf(agent) % 4 * 42, 485 + Math.floor(agentsState.indexOf(agent) / 4) * 8);
+      agent.targetCoordinates = project(350 + agents.indexOf(agent) % 4 * 42, 485 + Math.floor(agents.indexOf(agent) / 4) * 8);
       agent.currentRoom = "brain";
       agent.status = "meeting";
       agent.currentTask = "High-priority all-hands alignment at The Brain";
@@ -633,9 +633,10 @@ export function updateAgentStatus(
   id: string,
   status: CampusStatus,
   currentTask?: string,
-  speechBubble?: string
+  speechBubble?: string,
+  agents = agentsState
 ): AgentProfile {
-  const agent = agentsState.find((a) => a.id === id);
+  const agent = agents.find((a) => a.id === id);
   if (!agent) {
     throw new Error(`Agent with id "${id}" not found.`);
   }
@@ -645,8 +646,8 @@ export function updateAgentStatus(
   return agent;
 }
 
-export function updateAgentPositions(now = Date.now()): void {
-  for (const agent of agentsState) {
+export function updateAgentPositions(now = Date.now(), agents = agentsState): void {
+  for (const agent of agents) {
     agent.currentCoordinates = agentPositionAt(agent, now);
     if (agent.targetCoordinates && Math.hypot(agent.currentCoordinates.x - agent.targetCoordinates.x, agent.currentCoordinates.y - agent.targetCoordinates.y) < 0.01) {
       agent.currentCoordinates = { ...agent.targetCoordinates };
@@ -656,8 +657,8 @@ export function updateAgentPositions(now = Date.now()): void {
   }
 }
 
-export function getCampusStats(pendingApprovalsCount = 0): CampusStats {
-  const total = agentsState.length;
+export function getCampusStats(pendingApprovalsCount = 0, agents = agentsState): CampusStats {
+  const total = agents.length;
   let working = 0;
   let eating = 0;
   let gym = 0;
@@ -665,7 +666,7 @@ export function getCampusStats(pendingApprovalsCount = 0): CampusStats {
   let breakCount = 0;
   let arriving = 0;
 
-  for (const a of agentsState) {
+  for (const a of agents) {
     if (a.status === "working") working++;
     else if (a.status === "eating") eating++;
     else if (a.status === "gym") gym++;

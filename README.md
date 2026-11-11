@@ -1,6 +1,8 @@
 # AI Agent Office HQ
 
-> An autonomous, web-based multi-agent operations headquarters featuring an interactive 2D pixel-art virtual office floor, specialized department agents, a shared brain memory store, a deterministic Human-in-the-Loop (HITL) approval queue, and an autonomous GitHub Radar discovery engine.
+> An interactive pixel-art agent office with shared memory, a Human-in-the-Loop approval queue, and scored Radar fixtures. Agent responses and external actions are simulations; production storage and operator sign-in use Supabase.
+
+For Vercel environment variables, database setup, and the first operator account, see [deployment instructions](docs/DEPLOYMENT.md).
 
 ---
 
@@ -8,9 +10,9 @@
 
 - 🏢 **Interactive 2D Virtual Office Floor**: Real-time HTML5 Canvas rendering of the office layout with 9 specialized department desks, animated agent characters, glowing monitor state indicators, and reactive speech bubbles.
 - 🎯 **One Agent, One Job Protocol**: Strict department briefs, model tier allocation (`Opus`, `Sonnet`, `Haiku`), tool allowlists, and hard guardrails ("What You Must Never Do").
-- 🧠 **The Shared Brain (Central Memory)**: Central knowledge repository (`data/memory.json`) where agents read and persist learnings, architecture guidelines, and operating policies.
-- 🛡️ **Human-in-the-Loop (HITL) Gate**: Deterministic approval queue intercepting financial (Shopify refunds/discounts) and public (social posts, outbound emails) operations with verified execution receipts.
-- 📡 **GitHub Radar & Autonomous Discovery**: Automated 6:00 AM scoring routine analyzing trending repositories across focus topics (`ai-agents`, `memory`, `video`, `voice`) with weighted velocity algorithms.
+- 🧠 **The Shared Brain (Central Memory)**: Persistent Supabase records in production, with self-healing JSON storage for local development.
+- 🛡️ **Human-in-the-Loop (HITL) Gate**: Operator approval decisions with append-only database auditing and clearly labeled sandbox receipts.
+- 📡 **GitHub Radar**: Deterministic scoring of sample repositories across focus topics (`ai-agents`, `memory`, `video`, `voice`). Live discovery and scheduled scans are not connected.
 
 ---
 

@@ -1,8 +1,9 @@
+import { getDatabase } from "./supabase/server";
 import fs from "fs";
 import path from "path";
 import { RadarItem, RadarTopic } from "@/types";
 
-const RADAR_DIR = path.resolve(process.cwd(), "radar");
+const RADAR_DIR = path.resolve(process.env.OFFICE_DATA_DIR || process.cwd(), "radar");
 const RADAR_FILE = path.join(RADAR_DIR, "data.json");
 
 export interface ScoringInput {
@@ -118,7 +119,13 @@ function ensureRadarDirectory(): void {
   }
 }
 
-export function getRadarData(): RadarItem[] {
+export async function getRadarData(): Promise<RadarItem[]> {
+  const db = getDatabase();
+  if (db) {
+    const { data, error } = await db.from("office_radar").select("data");
+    if (error) throw new Error("Could not load Radar data.");
+    return data.map(row => row.data as RadarItem).sort((a,b) => b.score - a.score);
+  }
   ensureRadarDirectory();
   if (!fs.existsSync(RADAR_FILE)) {
     runRadarScanSync();
@@ -135,8 +142,7 @@ export function getRadarData(): RadarItem[] {
   }
 }
 
-function runRadarScanSync(): RadarItem[] {
-  ensureRadarDirectory();
+function scoreRadarItems(): RadarItem[] {
   const now = new Date().toISOString();
   const scoredItems: RadarItem[] = SEED_RADAR_REPOS.map((item) => {
     const score = calculateRadarScore({
@@ -161,6 +167,12 @@ function runRadarScanSync(): RadarItem[] {
 
   scoredItems.sort((a, b) => b.score - a.score);
 
+  return scoredItems;
+}
+
+function runRadarScanSync(): RadarItem[] {
+  ensureRadarDirectory();
+  const scoredItems = scoreRadarItems();
   const tempFile = `${RADAR_FILE}.tmp`;
   fs.writeFileSync(tempFile, JSON.stringify(scoredItems, null, 2), "utf-8");
   fs.renameSync(tempFile, RADAR_FILE);
@@ -169,6 +181,13 @@ function runRadarScanSync(): RadarItem[] {
 }
 
 export async function runRadarScan(): Promise<RadarItem[]> {
-  return runRadarScanSync();
+  const db = getDatabase();
+  if (!db) return runRadarScanSync();
+  const items = scoreRadarItems();
+  for (const item of items) {
+    const { error } = await db.from("office_radar").update({ data: item }).eq("id", item.id).select("id").single();
+    if (error) throw new Error("Could not save the Radar refresh.");
+  }
+  return items;
 }
 

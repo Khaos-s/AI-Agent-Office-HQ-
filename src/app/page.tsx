@@ -61,7 +61,7 @@ export default function Home() {
   const fetchData = useCallback(async () => {
     try {
       const [offRes, appRes] = await Promise.all([
-        fetch("/api/office/state").then((r) => r.json()),
+        fetch("/api/office/state").then((r) => { if (r.status === 401 || r.status === 403) window.location.assign("/login"); return r.json(); }),
         fetch("/api/approvals").then((r) => r.json()),
       ]);
       if (offRes.success && offRes.agents) {

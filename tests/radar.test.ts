@@ -6,7 +6,7 @@ import {
 } from "@/lib/radar-engine";
 
 describe("GitHub Radar Scoring Engine", () => {
-  it("calculates radar score with proper topic weights", () => {
+  it("calculates radar score with proper topic weights", async () => {
     const highMatch = calculateRadarScore({
       starsGrowth: 450,
       topic: "ai-agents",
@@ -26,7 +26,7 @@ describe("GitHub Radar Scoring Engine", () => {
     expect(lowMatch).toBeGreaterThanOrEqual(0);
   });
 
-  it("handles boundary edge cases without NaN", () => {
+  it("handles boundary edge cases without NaN", async () => {
     const zeroGrowth = calculateRadarScore({
       starsGrowth: 0,
       topic: "memory",
@@ -47,7 +47,7 @@ describe("GitHub Radar Scoring Engine", () => {
       expect(results[i].score).toBeGreaterThanOrEqual(results[i + 1].score);
     }
 
-    const fetched = getRadarData();
+    const fetched = await getRadarData();
     expect(fetched.length).toBe(results.length);
     expect(fetched[0].id).toBe(results[0].id);
   });
