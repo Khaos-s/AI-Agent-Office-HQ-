@@ -18,7 +18,7 @@
 
 ## Stack and Runtime
 
-- **Framework**: Next.js 14+ (App Router), React 18+, TypeScript.
+- **Framework**: Next.js 15 (App Router), React 19, TypeScript.
 - **Styling**: Tailwind CSS with custom pixel-art and HUD palette.
 - **Icons**: Lucide React.
 - **Persistence**: Supabase/PostgreSQL in production, with verified operator sign-in and row-level security. Local development without Supabase settings uses self-healing JSON stores. See [deployment setup](DEPLOYMENT.md).

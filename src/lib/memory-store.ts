@@ -51,7 +51,7 @@ function ensureFileExists(): void {
 }
 
 export async function getMemories(tag?: string): Promise<MemoryEntry[]> {
-  const db = getDatabase();
+  const db = await getDatabase();
   if (db) {
     const { data, error } = await db.from("office_memories").select("data").order("data->>createdAt", { ascending: false });
     if (error) throw new Error("Could not load shared memory.");
@@ -81,7 +81,7 @@ export async function addMemory(entry: Omit<MemoryEntry, "id" | "createdAt">): P
     id: `mem-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`,
     createdAt: new Date().toISOString(),
   };
-  const db = getDatabase();
+  const db = await getDatabase();
   if (db) {
     const { error } = await db.from("office_memories").insert({ id: newMemory.id, data: newMemory });
     if (error) throw new Error("Could not save shared memory.");

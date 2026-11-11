@@ -67,7 +67,7 @@ function ensureFileExists(): void {
 }
 
 export async function getApprovals(status?: ApprovalStatus): Promise<HITLApproval[]> {
-  const db = getDatabase();
+  const db = await getDatabase();
   if (db) {
     let query = db.from("office_approvals").select("data").order("data->>createdAt", { ascending: false });
     if (status) query = query.eq("data->>status", status);
@@ -101,7 +101,7 @@ export async function createApproval(item: Omit<HITLApproval, "id" | "createdAt"
     createdAt: new Date().toISOString(),
   };
 
-  const db = getDatabase();
+  const db = await getDatabase();
   if (db) {
     const { error } = await db.from("office_approvals").insert({ id: newApproval.id, data: newApproval });
     if (error) throw new Error("Could not save the approval request.");
@@ -140,7 +140,7 @@ export async function resolveApproval(
   if (comment) target.resolutionComment = comment;
   if (executionReceipt) target.executionReceipt = executionReceipt;
 
-  const db = getDatabase();
+  const db = await getDatabase();
   if (db) {
     const { data, error } = await db.from("office_approvals").update({ data: target }).eq("id", id).eq("data->>status", "pending").select("data").maybeSingle();
     if (error) throw new Error(error.code === "40001" ? "Approval already resolved." : "Could not save the approval decision.");

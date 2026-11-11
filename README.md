@@ -22,7 +22,7 @@ For Vercel environment variables, database setup, and the first operator account
 +-----------------------------------------------------------------------------------+
 |                        AI Agent Office HQ (Next.js App)                           |
 +-----------------------------------------------------------------------------------+
-|  Web Frontend (React 18 + Tailwind CSS + HTML5 2D Canvas)                         |
+|  Web Frontend (React 19 + Tailwind CSS + HTML5 2D Canvas)                         |
 |  - Virtual Office Floor (Desks, animated agents, speech bubbles, hit-testing)    |
 |  - Human-in-the-Loop Queue Modal (Risk badges, payload inspector, approve/reject) |
 |  - Shared Brain Explorer (Tag filters, search, commit knowledge)                  |

@@ -10,12 +10,12 @@ export function databaseConfigured() {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY);
 }
 
-export function getDatabase() {
+export async function getDatabase() {
   if (!databaseConfigured()) {
     if (process.env.VERCEL) throw new AccessError("Persistent storage is not configured.", 503);
     return null;
   }
-  const jar = cookies();
+  const jar = await cookies();
   return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!, {
     cookies: {
       getAll: () => jar.getAll(),
@@ -25,7 +25,7 @@ export function getDatabase() {
 }
 
 export async function requireOperator() {
-  const db = getDatabase();
+  const db = await getDatabase();
   if (!db) return null;
   const { data: { user }, error } = await db.auth.getUser();
   if (error || !user) throw new AccessError("Sign in to continue.", 401);
