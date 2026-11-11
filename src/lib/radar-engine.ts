@@ -120,7 +120,7 @@ function ensureRadarDirectory(): void {
 }
 
 export async function getRadarData(): Promise<RadarItem[]> {
-  const db = getDatabase();
+  const db = await getDatabase();
   if (db) {
     const { data, error } = await db.from("office_radar").select("data");
     if (error) throw new Error("Could not load Radar data.");
@@ -181,7 +181,7 @@ function runRadarScanSync(): RadarItem[] {
 }
 
 export async function runRadarScan(): Promise<RadarItem[]> {
-  const db = getDatabase();
+  const db = await getDatabase();
   if (!db) return runRadarScanSync();
   const items = scoreRadarItems();
   for (const item of items) {

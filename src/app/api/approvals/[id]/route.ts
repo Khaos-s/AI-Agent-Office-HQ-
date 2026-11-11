@@ -10,9 +10,10 @@ export const dynamic = "force-dynamic";
 
 async function handleGET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const approval = await getApprovalById(params.id);
+  const { id } = await params;
+  const approval = await getApprovalById(id);
   if (!approval) {
     return NextResponse.json({ success: false, error: "Approval not found" }, { status: 404 });
   }
@@ -21,9 +22,10 @@ async function handleGET(
 
 async function handlePATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json().catch(() => null);
     if (!body || typeof body !== "object") return NextResponse.json({ success: false, error: "Invalid request." }, { status: 400 });
     const { action, comment } = body;
@@ -38,7 +40,7 @@ async function handlePATCH(
       );
     }
 
-    const current = await getApprovalById(params.id);
+    const current = await getApprovalById(id);
     if (!current) {
       return NextResponse.json({ success: false, error: "Approval not found" }, { status: 404 });
     }
@@ -55,7 +57,7 @@ async function handlePATCH(
 
     // Execution is a sandbox receipt only; the conditional database update and audit are atomic.
     const receipt = action === "approve" ? await executeApprovedAction(current) : undefined;
-    const resolved = await resolveApproval(params.id, action === "approve" ? "approved" : "rejected", reviewer, comment, receipt);
+    const resolved = await resolveApproval(id, action === "approve" ? "approved" : "rejected", reviewer, comment, receipt);
     const agents = await readAgents();
     const agent = agents.find(a => a.id === current.agentId);
     if (agent) {
