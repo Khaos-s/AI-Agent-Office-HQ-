@@ -49,5 +49,6 @@
 - `npm install`: Install dependencies.
 - `npm run dev`: Launch local development server on `http://localhost:3000`.
 - `npm test`: Run complete Vitest suite.
+- `npm run lint`: Check the source with ESLint and the Next.js Core Web Vitals rules.
 - `npm run build`: Compile production Next.js build.
 

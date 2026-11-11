@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import type { AgentProfile, RoomLocation } from "@/types";
 import { renderIsometricCampus, getAgentAtIsometricCoords } from "@/lib/isometric-campus-renderer";
 import { CAMPUS_WIDTH, CAMPUS_HEIGHT, CAMPUS_ROOMS, project, isInsideCampus } from "@/lib/campus-layout";
@@ -34,13 +34,13 @@ export const CampusViewport: React.FC<CampusViewportProps> = ({ currentRoom, age
   source.current = agents;
   clockOffset.current = serverOffset;
 
-  const fit = (id = roomId) => {
+  const fit = useCallback((id: string) => {
     const { w, h } = size.current;
     const room = CAMPUS_ROOMS.find(r => r.id === id);
     const zoom = room ? Math.min((w - 64) / 430, (h - 230) / 310, 2.1) : Math.min((w - 32) / CAMPUS_WIDTH, (h - 180) / CAMPUS_HEIGHT);
     const center = room ? project(room.x + 120, room.y + 120) : { x: CAMPUS_WIDTH / 2, y: CAMPUS_HEIGHT / 2 };
     camera.current = { zoom: Math.max(.18, zoom), x: -(center.x - CAMPUS_WIDTH / 2) * zoom, y: -(center.y - CAMPUS_HEIGHT / 2) * zoom - 8 };
-  };
+  }, []);
 
   useEffect(() => {
     const id = currentRoom === "overview" ? "overview" : CAMPUS_ROOMS.find(r => r.type === currentRoom)?.id ?? "overview";
@@ -59,7 +59,7 @@ export const CampusViewport: React.FC<CampusViewportProps> = ({ currentRoom, age
     };
     const ro = new ResizeObserver(resize); ro.observe(container); resize();
     return () => ro.disconnect();
-  }, [roomId]);
+  }, [roomId, fit]);
 
   const changeZoom = (factor: number) => { camera.current.zoom = Math.max(.18, Math.min(2.5, camera.current.zoom * factor)); };
 

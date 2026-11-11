@@ -61,7 +61,7 @@ export const HQHeader: React.FC<HQHeaderProps> = ({
           <span className="text-[11px] font-semibold uppercase tracking-[.18em] text-slate-100">
             EasyUp Software Solution
           </span>
-          <span className="ml-2 text-[9px] text-slate-500">// AGENT OFFICE</span>
+          <span className="ml-2 text-[9px] text-slate-500">{"// AGENT OFFICE"}</span>
         </div>
       </div>
 
