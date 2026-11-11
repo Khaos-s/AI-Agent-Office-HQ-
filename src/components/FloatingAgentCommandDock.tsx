@@ -84,7 +84,7 @@ export const FloatingAgentCommandDock: React.FC<FloatingAgentCommandDockProps> =
   };
 
   return (
-    <div className="pointer-events-none fixed bottom-5 left-1/2 z-30 flex -translate-x-1/2 flex-col items-center">
+    <div className="pointer-events-none absolute bottom-8 left-1/2 w-[calc(100%-32px)] max-w-3xl z-30 flex -translate-x-1/2 flex-col items-center">
       <AnimatePresence>
         {showPills && (
           <motion.div
@@ -116,13 +116,13 @@ export const FloatingAgentCommandDock: React.FC<FloatingAgentCommandDockProps> =
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 20, opacity: 0 }}
-        className="pointer-events-auto flex items-center gap-2 rounded-2xl border border-sky-500/30 bg-[#080d19]/90 p-1.5 pl-3 pr-2 shadow-2xl backdrop-blur-xl ring-1 ring-sky-500/20"
+        className="pointer-events-auto flex w-full items-center gap-2 rounded-2xl border border-sky-500/30 bg-[#080d19]/90 p-1.5 pl-3 pr-2 shadow-2xl backdrop-blur-xl ring-1 ring-sky-500/20"
       >
         {/* Agent badge */}
         <button
           onClick={onOpenDetail}
           title="Inspect agent details and system prompt"
-          className="group flex items-center gap-2 rounded-xl bg-white/[0.03] px-2.5 py-1.5 transition hover:bg-white/[0.08]"
+          className="group flex shrink-0 items-center gap-2 rounded-xl bg-white/[0.03] px-2.5 py-1.5 transition hover:bg-white/[0.08]"
         >
           <div
             className="flex h-6 w-6 items-center justify-center rounded-lg text-[10px] font-bold text-white shadow"
@@ -130,16 +130,16 @@ export const FloatingAgentCommandDock: React.FC<FloatingAgentCommandDockProps> =
           >
             {agent.name.slice(0, 2).toUpperCase()}
           </div>
-          <div className="flex flex-col text-left">
+          <div className="hidden md:flex flex-col text-left">
             <span className="flex items-center gap-1 text-[11px] font-bold leading-tight text-slate-100 group-hover:text-sky-300">
               @{agent.name}
-              <span className="text-[9px] font-mono text-slate-500">
+              <span className="hidden xl:inline text-[9px] font-mono text-slate-500">
                 ({agent.shortRole || agent.role})
               </span>
             </span>
             <span className="flex items-center gap-1 text-[9px] font-mono text-sky-400">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-              Connected to AI • {agent.modelTier.toUpperCase()}
+              Agent workspace • {agent.modelTier.toUpperCase()}
             </span>
           </div>
         </button>
@@ -153,22 +153,23 @@ export const FloatingAgentCommandDock: React.FC<FloatingAgentCommandDockProps> =
             e.preventDefault();
             handleDispatch();
           }}
-          className="flex items-center gap-1.5"
+          className="flex min-w-0 flex-1 items-center gap-1.5"
         >
           <input
+            aria-label={`Instruction for ${agent.name}`}
             type="text"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder={`Instruct @${agent.name} (e.g. "Run tests", "Deploy")...`}
             disabled={isSubmitting}
-            className="w-64 rounded-xl border border-white/[0.08] bg-[#03060d] px-3 py-1.5 text-xs text-slate-100 placeholder-slate-500 outline-none transition focus:border-sky-400/60 focus:w-80"
+            className="w-full min-w-0 rounded-xl border border-white/[0.08] bg-[#03060d] px-3 py-2.5 text-xs text-slate-100 placeholder-slate-500 outline-none transition focus:border-sky-400/60"
           />
 
           <button
             type="button"
             onClick={() => setShowPills((v) => !v)}
             title="Toggle quick suggestions"
-            className={`flex items-center justify-center rounded-xl border p-1.5 transition ${
+            className={`flex items-center justify-center rounded-xl border p-2.5 transition ${
               showPills
                 ? "border-sky-400/50 bg-sky-500/20 text-sky-300"
                 : "border-white/[0.08] bg-white/[0.03] text-slate-400 hover:text-slate-200"
@@ -178,9 +179,10 @@ export const FloatingAgentCommandDock: React.FC<FloatingAgentCommandDockProps> =
           </button>
 
           <button
+            aria-label="Dispatch instruction"
             type="submit"
             disabled={!prompt.trim() || isSubmitting}
-            className="flex items-center gap-1 rounded-xl border border-sky-400/40 bg-sky-500/25 px-3 py-1.5 text-xs font-semibold text-sky-200 transition hover:bg-sky-500/35 disabled:opacity-40"
+            className="flex items-center gap-1 rounded-xl border border-sky-400/40 bg-sky-500/25 px-3 py-2.5 text-xs font-semibold text-sky-200 transition hover:bg-sky-500/35 disabled:opacity-40"
           >
             {isSubmitting ? (
               <>
@@ -190,7 +192,7 @@ export const FloatingAgentCommandDock: React.FC<FloatingAgentCommandDockProps> =
             ) : (
               <>
                 <Send className="h-3.5 w-3.5" />
-                <span>Dispatch</span>
+                <span className="hidden sm:inline">Dispatch</span>
               </>
             )}
           </button>

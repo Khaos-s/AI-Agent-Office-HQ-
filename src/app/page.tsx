@@ -22,6 +22,10 @@ import { CheckCircle2, AlertCircle } from "lucide-react";
 type Notif = { id: number; msg: string; ok: boolean };
 
 export default function Home() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [connectionState, setConnectionState] = useState<"loading" | "ready" | "stale">("loading");
+  const [serverOffset, setServerOffset] = useState(0);
+  useEffect(() => { setSidebarOpen(window.innerWidth >= 1024); }, []);
   const [currentRoom,   setCurrentRoom]   = useState<RoomLocation>("overview");
   const [agents,        setAgents]        = useState<AgentProfile[]>(INITIAL_24_AGENTS);
   const [selectedAgent, setSelectedAgent] = useState<AgentProfile | null>(
@@ -62,11 +66,14 @@ export default function Home() {
       ]);
       if (offRes.success && offRes.agents) {
         setAgents(offRes.agents);
+        setConnectionState("ready");
+        if (offRes.timestamp) setServerOffset(Date.parse(offRes.timestamp) - Date.now());
         if (offRes.campusStats) setCampusStats(offRes.campusStats);
       }
+      if (!offRes.success) setConnectionState("stale");
       if (appRes.success && appRes.approvals) setApprovals(appRes.approvals);
     } catch {
-      /* Keep current state on network pause */
+      setConnectionState("stale");
     }
   }, []);
 
@@ -78,9 +85,10 @@ export default function Home() {
 
   // Keep selectedAgent synchronized
   useEffect(() => {
+    if (!agents.length) { setSelectedAgent(null); return; }
     if (selectedAgent) {
       const up = agents.find((a) => a.id === selectedAgent.id);
-      if (up) setSelectedAgent(up);
+      setSelectedAgent(up ?? agents[0]);
     } else if (agents.length) {
       setSelectedAgent(agents.find((a) => a.id === "josiah") ?? agents[0]);
     }
@@ -97,11 +105,11 @@ export default function Home() {
 
       if (res.success) {
         setAgents((p) => p.map((a) => (a.id === agentId ? res.agent : a)));
-        push(`Dispatched @${agentId} walking to ${dest.toUpperCase()}`);
+        push(`@${agentId} is walking to ${dest.toUpperCase()}`);
         fetchData();
-      }
+      } else { push(res.error || "Could not move this agent.", false); }
     } catch (e) {
-      console.error(e);
+      push("Could not reach the campus. Please try again.", false);
     }
   };
 
@@ -115,11 +123,11 @@ export default function Home() {
 
       if (res.success) {
         setAgents((p) => p.map((a) => (a.id === agentId ? res.agent : a)));
-        push(`Dispatched @${agentId} walking to target position`);
+        push(`@${agentId} is walking to the selected position`);
         fetchData();
-      }
+      } else { push(res.error || "Could not move this agent.", false); }
     } catch (e) {
-      console.error(e);
+      push("Could not reach the campus. Please try again.", false);
     }
   };
 
@@ -206,7 +214,7 @@ export default function Home() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-[#07090f]">
+    <div className="flex h-[100dvh] w-screen flex-col overflow-hidden bg-[#07090f]">
       {/* Slim header — 44 px */}
       <HQHeader
         currentRoom={currentRoom}
@@ -221,7 +229,11 @@ export default function Home() {
 
       {/* Full-bleed campus canvas fills everything below header */}
       <main className="relative flex-1 min-h-0 w-full overflow-hidden">
+        <div className={`h-full ${sidebarOpen ? "lg:pr-80" : ""}`}>
+        <div className="relative h-full">
         <CampusViewport
+          connectionState={connectionState}
+          serverOffset={serverOffset}
           currentRoom={currentRoom}
           agents={agents}
           selectedAgentId={selectedAgent?.id ?? null}
@@ -240,8 +252,13 @@ export default function Home() {
           onOpenDetail={() => setDetailOpen(true)}
         />
 
+        </div>
+        </div>
+
         {/* Slide-over command panel */}
         <HQSidebar
+          open={sidebarOpen}
+          onOpenChange={setSidebarOpen}
           stats={campusStats}
           agents={agents}
           selectedAgent={selectedAgent}

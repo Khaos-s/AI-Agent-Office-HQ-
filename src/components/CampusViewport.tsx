@@ -1,17 +1,11 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
-import { AgentProfile, RoomLocation } from "@/types";
-import {
-  renderIsometricCampus,
-  getAgentAtIsometricCoords,
-  getRoomAtIsometricCoords,
-  CAMPUS_WIDTH,
-  CAMPUS_HEIGHT,
-  RippleEffect,
-} from "@/lib/isometric-campus-renderer";
-import { INITIAL_24_AGENTS } from "@/lib/agent-registry";
-import { RotateCcw } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import type { AgentProfile, RoomLocation } from "@/types";
+import { renderIsometricCampus, getAgentAtIsometricCoords } from "@/lib/isometric-campus-renderer";
+import { CAMPUS_WIDTH, CAMPUS_HEIGHT, CAMPUS_ROOMS, project, isInsideCampus } from "@/lib/campus-layout";
+import { agentPositionAt } from "@/lib/agent-movement";
+import { Minus, Plus, Maximize2, Tags } from "lucide-react";
 
 interface CampusViewportProps {
   currentRoom: RoomLocation;
@@ -20,300 +14,169 @@ interface CampusViewportProps {
   onSelectAgent: (agent: AgentProfile | null) => void;
   onRoomChange: (room: RoomLocation) => void;
   onMoveAgentDirectly?: (agentId: string, x: number, y: number) => void;
+  connectionState: "loading" | "ready" | "stale";
+  serverOffset: number;
 }
 
-export const CampusViewport: React.FC<CampusViewportProps> = ({
-  currentRoom,
-  agents,
-  selectedAgentId,
-  onSelectAgent,
-  onRoomChange,
-  onMoveAgentDirectly,
-}) => {
-  const canvasRef      = useRef<HTMLCanvasElement | null>(null);
-  const containerRef   = useRef<HTMLDivElement | null>(null);
-  const zoomRef        = useRef<number>(1.1);
-  const panRef         = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  const targetCamRef   = useRef<{ panX: number; panY: number; zoom: number }>({
-    panX: 0,
-    panY: 0,
-    zoom: 1.1,
-  });
-  const isDraggingRef  = useRef<boolean>(false);
-  const dragStartRef   = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  const tickRef        = useRef<number>(0);
-  const ripplesRef     = useRef<RippleEffect[]>([]);
-  const hoveredIdRef   = useRef<string | null>(null);
-  const rafRef         = useRef<number>(0);
-  const localAgentsRef = useRef<AgentProfile[]>(
-    agents && agents.length > 0 ? agents : INITIAL_24_AGENTS
-  );
-  const dprRef         = useRef<number>(1);
-  const canvasSizeRef  = useRef<{ w: number; h: number }>({
-    w: CAMPUS_WIDTH,
-    h: CAMPUS_HEIGHT,
-  });
+export const CampusViewport: React.FC<CampusViewportProps> = ({ currentRoom, agents, selectedAgentId, onSelectAgent, onRoomChange, onMoveAgentDirectly, connectionState, serverOffset }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const camera = useRef({ zoom: 1, x: 0, y: 0 });
+  const size = useRef({ w: 0, h: 0, dpr: 1 });
+  const drag = useRef<{ id: number; x: number; y: number; panX: number; panY: number; moved: boolean } | null>(null);
+  const hovered = useRef<string | null>(null);
+  const source = useRef(agents);
+  const rendered = useRef(agents);
+  const clockOffset = useRef(serverOffset);
+  const [names, setNames] = useState(true);
+  const [roomId, setRoomId] = useState("overview");
+  const [moveMode, setMoveMode] = useState(false);
+  source.current = agents;
+  clockOffset.current = serverOffset;
 
-  // Sync agents without losing walking progress
-  useEffect(() => {
-    if (agents && agents.length > 0) {
-      localAgentsRef.current = agents.map((a) => {
-        const ex = localAgentsRef.current.find((e) => e.id === a.id);
-        if (ex?.targetCoordinates) {
-          return {
-            ...a,
-            currentCoordinates: { ...ex.currentCoordinates },
-            targetCoordinates: { ...ex.targetCoordinates },
-          };
-        }
-        return { ...a };
-      });
-    }
-  }, [agents]);
+  const fit = (id = roomId) => {
+    const { w, h } = size.current;
+    const room = CAMPUS_ROOMS.find(r => r.id === id);
+    const zoom = room ? Math.min((w - 64) / 430, (h - 230) / 310, 2.1) : Math.min((w - 32) / CAMPUS_WIDTH, (h - 180) / CAMPUS_HEIGHT);
+    const center = room ? project(room.x + 120, room.y + 120) : { x: CAMPUS_WIDTH / 2, y: CAMPUS_HEIGHT / 2 };
+    camera.current = { zoom: Math.max(.18, zoom), x: -(center.x - CAMPUS_WIDTH / 2) * zoom, y: -(center.y - CAMPUS_HEIGHT / 2) * zoom - 8 };
+  };
 
-  // Camera presets by room
   useEffect(() => {
-    const presets: Record<string, { panX: number; panY: number; zoom: number }> = {
-      overview:    { panX: 0,    panY: 0,    zoom: 1.15 },
-      focus_work:  { panX: 130,  panY: 100,  zoom: 1.5  },
-      server_bay:  { panX: -110, panY: 100,  zoom: 1.5  },
-      pantry:      { panX: 240,  panY: -30,  zoom: 1.5  },
-      all_hands:   { panX: 240,  panY: -30,  zoom: 1.5  },
-      gym:         { panX: 170,  panY: -150, zoom: 1.5  },
-      brain:       { panX: 0,    panY: -20,  zoom: 1.6  },
-    };
-    const p = presets[currentRoom] ?? presets.overview;
-    targetCamRef.current = p;
+    const id = currentRoom === "overview" ? "overview" : CAMPUS_ROOMS.find(r => r.type === currentRoom)?.id ?? "overview";
+    setRoomId(previous => currentRoom !== "overview" && CAMPUS_ROOMS.find(r => r.id === previous)?.type === currentRoom ? previous : id);
   }, [currentRoom]);
 
-  // Resize canvas to fill its container at device pixel ratio
   useEffect(() => {
-    const canvas    = canvasRef.current;
-    const container = containerRef.current;
+    const canvas = canvasRef.current, container = containerRef.current;
     if (!canvas || !container) return;
-
     const resize = () => {
-      const dpr = window.devicePixelRatio || 1;
-      dprRef.current = dpr;
-      const w = container.clientWidth || window.innerWidth || CAMPUS_WIDTH;
-      const h =
-        container.clientHeight ||
-        (window.innerHeight > 44 ? window.innerHeight - 44 : CAMPUS_HEIGHT);
-
-      canvas.width  = Math.max(w * dpr, 100);
-      canvas.height = Math.max(h * dpr, 100);
-      canvas.style.width  = `${w}px`;
-      canvas.style.height = `${h}px`;
-      canvasSizeRef.current = { w, h };
+      const { width: w, height: h } = container.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      size.current = { w, h, dpr };
+      canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+      fit(roomId);
     };
+    const ro = new ResizeObserver(resize); ro.observe(container); resize();
+    return () => ro.disconnect();
+  }, [roomId]);
 
-    resize();
-    const ro = new ResizeObserver(resize);
-    ro.observe(container);
-    window.addEventListener("resize", resize);
+  const changeZoom = (factor: number) => { camera.current.zoom = Math.max(.18, Math.min(2.5, camera.current.zoom * factor)); };
 
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", resize);
-    };
-  }, []);
-
-  // Main render loop
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    const wheel = (event: WheelEvent) => { event.preventDefault(); changeZoom(Math.exp(-event.deltaY * .001)); };
+    canvas.addEventListener("wheel", wheel, { passive: false });
+    return () => canvas.removeEventListener("wheel", wheel);
+  }, []);
 
-    const loop = () => {
-      tickRef.current++;
-
-      // Smooth camera lerp
-      const cam = targetCamRef.current;
-      if (!isDraggingRef.current) {
-        panRef.current.x += (cam.panX - panRef.current.x) * 0.1;
-        panRef.current.y += (cam.panY - panRef.current.y) * 0.1;
-        zoomRef.current  += (cam.zoom - zoomRef.current)  * 0.1;
-      }
-
-      // Agent position interpolation (60fps smooth walk)
-      for (const a of localAgentsRef.current) {
-        if (a.targetCoordinates) {
-          const dx   = a.targetCoordinates.x - a.currentCoordinates.x;
-          const dy   = a.targetCoordinates.y - a.currentCoordinates.y;
-          const dist = Math.hypot(dx, dy);
-          if (dist < 2.5) {
-            a.currentCoordinates = { ...a.targetCoordinates };
-            delete a.targetCoordinates;
-          } else {
-            const spd = Math.min(dist, 3.5);
-            a.currentCoordinates.x += (dx / dist) * spd;
-            a.currentCoordinates.y += (dy / dist) * spd;
-          }
-        }
-      }
-
-      // Ripple decay
-      ripplesRef.current = ripplesRef.current
-        .map((r) => ({ ...r, radius: r.radius + 1.2, opacity: r.opacity - 0.025 }))
-        .filter((r) => r.opacity > 0.02);
-
-      // Render at logical canvas size
-      const ctx = canvas.getContext("2d");
-      if (ctx && canvasSizeRef.current.w > 0 && canvasSizeRef.current.h > 0) {
-        const dpr = dprRef.current;
-        ctx.save();
+  useEffect(() => {
+    let frame = 0;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const draw = (time: number) => {
+      const ctx = canvasRef.current?.getContext("2d");
+      const { w, h, dpr } = size.current;
+      rendered.current = source.current.map(a => ({ ...a, currentCoordinates: agentPositionAt(a, Date.now() + clockOffset.current) }));
+      if (ctx && w && h) {
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        renderIsometricCampus(
-          ctx,
-          localAgentsRef.current,
-          selectedAgentId,
-          hoveredIdRef.current,
-          tickRef.current,
-          zoomRef.current,
-          panRef.current,
-          ripplesRef.current,
-          canvasSizeRef.current.w,
-          canvasSizeRef.current.h
-        );
-        ctx.restore();
+        renderIsometricCampus(ctx, rendered.current, selectedAgentId, hovered.current, reduced.matches ? 0 : time / 16.67, camera.current.zoom, { x: camera.current.x, y: camera.current.y }, [], w, h, names);
       }
-
-      rafRef.current = requestAnimationFrame(loop);
+      frame = requestAnimationFrame(draw);
     };
+    frame = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(frame);
+  }, [selectedAgentId, names]);
 
-    rafRef.current = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(rafRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedAgentId]);
-
-  // Coordinate transformation: Screen -> World Space
   const toWorld = (clientX: number, clientY: number) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return { x: 0, y: 0 };
-    const rect  = canvas.getBoundingClientRect();
-    const lw    = canvasSizeRef.current.w;
-    const lh    = canvasSizeRef.current.h;
-    const rawX  = ((clientX - rect.left) / rect.width)  * lw;
-    const rawY  = ((clientY - rect.top)  / rect.height) * lh;
-    const zoom  = zoomRef.current;
-    const pan   = panRef.current;
-
-    // Inverse of:
-    // screenX = lw / 2 + pan.x + (worldX - CAMPUS_WIDTH / 2) * zoom
-    // screenY = lh / 2 + pan.y + (worldY - CAMPUS_HEIGHT / 2) * zoom
-    const worldX = (rawX - lw / 2 - pan.x) / zoom + CAMPUS_WIDTH / 2;
-    const worldY = (rawY - lh / 2 - pan.y) / zoom + CAMPUS_HEIGHT / 2;
-
-    return { x: worldX, y: worldY };
+    const rect = canvasRef.current!.getBoundingClientRect();
+    const { zoom, x, y } = camera.current;
+    return { x: (clientX - rect.left - size.current.w / 2 - x) / zoom + CAMPUS_WIDTH / 2, y: (clientY - rect.top - size.current.h / 2 - y) / zoom + CAMPUS_HEIGHT / 2 };
   };
 
-  const onMouseDown = (e: React.MouseEvent) => {
-    if (e.button !== 0) return;
-    isDraggingRef.current = true;
-    dragStartRef.current  = {
-      x: e.clientX - panRef.current.x,
-      y: e.clientY - panRef.current.y,
-    };
-  };
-
-  const onMouseMove = (e: React.MouseEvent) => {
-    if (isDraggingRef.current) {
-      const nx = e.clientX - dragStartRef.current.x;
-      const ny = e.clientY - dragStartRef.current.y;
-      panRef.current = { x: nx, y: ny };
-      targetCamRef.current.panX = nx;
-      targetCamRef.current.panY = ny;
-      return;
-    }
-    const { x, y } = toWorld(e.clientX, e.clientY);
-    const hit = getAgentAtIsometricCoords(x, y, localAgentsRef.current);
-    hoveredIdRef.current = hit?.id ?? null;
-  };
-
-  const onMouseUp = () => {
-    isDraggingRef.current = false;
-  };
-
-  const onClick = (e: React.MouseEvent) => {
-    const { x, y } = toWorld(e.clientX, e.clientY);
-
-    ripplesRef.current.push({ x, y, radius: 4, maxRadius: 32, opacity: 0.85 });
-
-    const agent = getAgentAtIsometricCoords(x, y, localAgentsRef.current);
-    if (agent) {
-      onSelectAgent(agent);
-      return;
-    }
-
-    // Shift+click to send selected agent to clicked tile
-    if (e.shiftKey && selectedAgentId && onMoveAgentDirectly) {
-      onMoveAgentDirectly(selectedAgentId, x, y);
-      return;
-    }
-
-    const room = getRoomAtIsometricCoords(x, y);
-    if (room) onRoomChange(room.type);
-  };
-
-  const onWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    const nz = Math.min(Math.max(zoomRef.current - e.deltaY * 0.001, 0.6), 2.5);
-    zoomRef.current = nz;
-    targetCamRef.current.zoom = nz;
-  };
-
-  const resetCamera = () => {
-    targetCamRef.current = { panX: 0, panY: 0, zoom: 1.15 };
-    onRoomChange("overview");
-  };
+  const reset = () => { setRoomId("overview"); onRoomChange("overview"); fit("overview"); };
+  const buttonClass = "flex h-11 w-11 items-center justify-center rounded-lg text-slate-200 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-amber-200";
+  const selected = agents.find(a => a.id === selectedAgentId);
 
   return (
-    <div
-      ref={containerRef}
-      className="relative h-full w-full overflow-hidden bg-[#07090f] select-none"
-      style={{ minHeight: "100%" }}
-    >
-      <canvas
-        ref={canvasRef}
-        onMouseDown={onMouseDown}
-        onMouseMove={onMouseMove}
-        onMouseUp={onMouseUp}
-        onClick={onClick}
-        onWheel={onWheel}
-        className="absolute inset-0 block h-full w-full canvas-drag"
-        style={{
-          imageRendering: "pixelated",
-          cursor: hoveredIdRef.current ? "pointer" : isDraggingRef.current ? "grabbing" : "grab",
+    <div ref={containerRef} className="relative h-full w-full overflow-hidden bg-[#10262b]">
+      <canvas ref={canvasRef} tabIndex={0} role="img" aria-label="Isometric agent office. Drag or use arrow keys to pan. Plus and minus zoom; Home fits the office. Select agents using the roster below." className="absolute inset-0 h-full w-full touch-none outline-offset-[-4px]"
+        onPointerDown={e => {
+          if (e.button !== 0 || drag.current) return;
+          e.currentTarget.setPointerCapture(e.pointerId);
+          drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, panX: camera.current.x, panY: camera.current.y, moved: false };
+        }}
+        onPointerMove={e => {
+          if (drag.current) {
+            if (drag.current.id !== e.pointerId) return;
+            const dx = e.clientX - drag.current.x, dy = e.clientY - drag.current.y;
+            if (Math.hypot(dx, dy) > 6) drag.current.moved = true;
+            if (drag.current.moved) { camera.current.x = drag.current.panX + dx; camera.current.y = drag.current.panY + dy; }
+          } else {
+            const p = toWorld(e.clientX, e.clientY);
+            hovered.current = getAgentAtIsometricCoords(p.x, p.y, rendered.current, camera.current.zoom, names, selectedAgentId)?.id ?? null;
+            e.currentTarget.style.cursor = hovered.current ? "pointer" : "grab";
+          }
+        }}
+        onPointerUp={e => {
+          if (!drag.current || drag.current.id !== e.pointerId) return;
+          const moved = drag.current.moved; drag.current = null;
+          e.currentTarget.releasePointerCapture(e.pointerId);
+          if (moved) return;
+          const p = toWorld(e.clientX, e.clientY);
+          if ((e.shiftKey || moveMode) && selectedAgentId && isInsideCampus(p.x, p.y)) {
+            onMoveAgentDirectly?.(selectedAgentId, p.x, p.y); setMoveMode(false); return;
+          }
+          const hit = getAgentAtIsometricCoords(p.x, p.y, rendered.current, camera.current.zoom, names, selectedAgentId);
+          if (hit) onSelectAgent(hit);
+        }}
+        onPointerCancel={e => { if (drag.current?.id === e.pointerId) drag.current = null; }}
+        onLostPointerCapture={e => { if (drag.current?.id === e.pointerId) drag.current = null; }}
+        onPointerLeave={() => { hovered.current = null; }}
+        onKeyDown={e => {
+          if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "+", "=", "-", "Home", "Escape"].includes(e.key)) e.preventDefault();
+          if (e.key === "ArrowLeft") camera.current.x += 40;
+          if (e.key === "ArrowRight") camera.current.x -= 40;
+          if (e.key === "ArrowUp") camera.current.y += 40;
+          if (e.key === "ArrowDown") camera.current.y -= 40;
+          if (e.key === "+" || e.key === "=") changeZoom(1.2);
+          if (e.key === "-") changeZoom(1 / 1.2);
+          if (e.key === "Home") reset();
+          if (e.key === "Escape") setMoveMode(false);
         }}
       />
-
-      {/* Bottom-left HUD bar matching command spec */}
-      <div className="pointer-events-auto absolute bottom-4 left-4 z-20 flex items-center gap-2.5 rounded-xl border border-white/[0.08] bg-slate-950/85 px-3.5 py-2 text-[11px] font-mono text-slate-300 backdrop-blur-md shadow-2xl">
-        {/* Compass N */}
-        <button
-          onClick={resetCamera}
-          title="Reset camera (North)"
-          className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-sky-500/50 bg-sky-500/20 text-[10px] font-black text-sky-300 transition hover:bg-sky-500/30"
-        >
-          N
-        </button>
-
-        <span className="text-sky-400 font-bold uppercase tracking-wider text-[11px]">
-          VIEWPORT (2D ISO):{" "}
-          <span className="text-slate-100">{currentRoom.toUpperCase().replace(/_/g, " ")}</span>
-        </span>
-
-        <button
-          onClick={resetCamera}
-          className="ml-2 flex items-center gap-1 text-slate-400 hover:text-white transition-colors text-[10px]"
-        >
-          <RotateCcw className="h-3 w-3 text-sky-400" /> Reset Camera
-        </button>
+      <div className="pointer-events-none absolute left-5 top-5 sm:left-7 sm:top-6">
+        <p className="text-[10px] font-semibold uppercase tracking-[.24em] text-[#9fbbb6]">EasyUp / Workspace 01</p>
+        <h1 className="mt-1 text-xl font-semibold tracking-tight text-[#edf3e7] sm:text-2xl">A place for great minds.</h1>
+        <p role="status" className="mt-2 flex items-center gap-2 text-[11px] text-[#b4cbc5]">
+          <span className={`h-1.5 w-1.5 rounded-full ${connectionState === "ready" ? "bg-[#aed6a3]" : "bg-amber-300"}`} />
+          {connectionState === "loading" ? "Loading campus…" : connectionState === "stale" ? "Connection paused · showing last known state" : agents.length ? `${agents.length} agents · 9 spaces · One shared brain` : "No agents in this campus"}
+        </p>
       </div>
-
-      {/* Bottom-right hint */}
-      <div className="pointer-events-none absolute bottom-4 right-4 z-20 select-none text-[10px] font-mono text-slate-400 bg-slate-950/80 px-3 py-1.5 rounded-lg border border-white/[0.07] backdrop-blur-md">
-        Click Agent to Inspect & Route • Drag to Pan • Scroll to Zoom
+      <div className="absolute bottom-[104px] left-4 right-4 flex items-end justify-between gap-2 sm:bottom-[94px] sm:left-6 sm:right-6">
+        <div className="flex max-w-[calc(100%-58px)] flex-col gap-2">
+          <label className="sr-only" htmlFor="campus-room">Explore a room</label>
+          <select id="campus-room" value={roomId} onChange={e => { setRoomId(e.target.value); onRoomChange(CAMPUS_ROOMS.find(r => r.id === e.target.value)?.type ?? "overview"); }} className="h-11 max-w-full rounded-lg border border-white/15 bg-[#132d34] px-3 text-xs text-[#e2ecdf]">
+            <option value="overview">↗ Entire office</option>
+            {CAMPUS_ROOMS.map((r, i) => <option key={r.id} value={r.id}>{String(i + 1).padStart(2, "0")} / {r.name}</option>)}
+          </select>
+          <label className="sr-only" htmlFor="campus-agent">Select an agent</label>
+          <select id="campus-agent" value={selectedAgentId ?? ""} disabled={!agents.length} onChange={e => onSelectAgent(agents.find(a => a.id === e.target.value) ?? null)} className="h-11 max-w-full rounded-lg border border-white/15 bg-[#132d34] px-3 text-xs text-[#e2ecdf]">
+            <option value="" disabled>Select an agent</option>
+            {agents.map(a => <option key={a.id} value={a.id}>{a.name} · {a.department}</option>)}
+          </select>
+          <button disabled={!selected} aria-pressed={moveMode} onClick={() => setMoveMode(!moveMode)} className="h-11 rounded-lg border border-white/15 bg-[#132d34] px-3 text-left text-xs text-[#e2ecdf] disabled:opacity-40">
+            {moveMode ? "Choose a floor tile · Cancel" : `Move ${selected?.name ?? "agent"}`}
+          </button>
+        </div>
+        <div className="flex flex-col gap-1 rounded-xl border border-white/15 bg-[#132d34]/95 p-1 shadow-xl">
+          <button aria-label="Zoom in" onClick={() => changeZoom(1.25)} className={buttonClass}><Plus size={17} /></button>
+          <button aria-label="Zoom out" onClick={() => changeZoom(.8)} className={buttonClass}><Minus size={17} /></button>
+          <button aria-label="Fit entire office" onClick={reset} className={buttonClass}><Maximize2 size={16} /></button>
+          <button aria-label="Show agent names" aria-pressed={names} onClick={() => setNames(!names)} className={`${buttonClass} ${names ? "bg-white/10" : ""}`}><Tags size={16} /></button>
+        </div>
       </div>
+      <p className="pointer-events-none absolute bottom-3 left-6 hidden text-[10px] tracking-wide text-[#9bb5af] sm:block">DRAG TO EXPLORE <span className="mx-2 opacity-40">/</span> SCROLL TO ZOOM <span className="mx-2 opacity-40">/</span> SELECT AN AGENT TO CONNECT</p>
     </div>
   );
 };

@@ -50,4 +50,10 @@ describe("Isometric Campus Hit-Testing and Coordinate Calculations", () => {
     const miss = getAgentAtIsometricCoords(50, 50, mockAgents);
     expect(miss).toBeNull();
   });
+
+  it("selects visible name plates at different zoom levels but ignores hidden ones", () => {
+    expect(getAgentAtIsometricCoords(280, 379, mockAgents, .7)?.id).toBe("josiah");
+    expect(getAgentAtIsometricCoords(280, 379, mockAgents, .7, false)).toBeNull();
+    expect(getAgentAtIsometricCoords(280, 379, mockAgents, .3, true, "josiah")?.id).toBe("josiah");
+  });
 });

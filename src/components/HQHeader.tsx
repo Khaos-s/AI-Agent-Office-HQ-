@@ -50,23 +50,23 @@ export const HQHeader: React.FC<HQHeaderProps> = ({
       initial={{ y: -48, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-      className="relative z-40 flex h-11 shrink-0 items-center justify-between border-b border-white/[0.07] bg-[#07090f]/90 px-4 backdrop-blur-md"
+      className="relative z-40 flex h-11 shrink-0 min-w-0 items-center justify-between border-b border-white/[0.07] bg-[#07090f]/90 px-3 gap-2 backdrop-blur-md"
     >
       {/* LEFT — Brand */}
       <div className="flex items-center gap-3">
         <div className="flex h-6 w-6 items-center justify-center rounded bg-sky-500/20 ring-1 ring-sky-500/40">
           <span className="text-[9px] font-black tracking-tight text-sky-300">HQ</span>
         </div>
-        <div className="hidden sm:block">
+        <div className="hidden xl:block">
           <span className="text-[11px] font-semibold uppercase tracking-[.18em] text-slate-100">
             EasyUp Software Solution
           </span>
-          <span className="ml-2 text-[9px] text-slate-500">// HQ COMMAND · office-v3</span>
+          <span className="ml-2 text-[9px] text-slate-500">// AGENT OFFICE</span>
         </div>
       </div>
 
       {/* CENTER — Room nav */}
-      <nav className="flex items-center gap-0.5 rounded-lg border border-white/[0.07] bg-white/[0.02] p-0.5">
+      <nav aria-label="Campus rooms" className="hidden lg:flex items-center gap-0.5 rounded-lg border border-white/[0.07] bg-white/[0.02] p-0.5">
         {NAV_ROOMS.map((room) => {
           const active = currentRoom === room.id;
           return (
@@ -74,6 +74,7 @@ export const HQHeader: React.FC<HQHeaderProps> = ({
               key={room.id}
               onClick={() => onRoomSelect(room.id)}
               className="relative px-3 py-1 text-[11px] font-medium transition"
+              aria-current={active ? "page" : undefined}
             >
               {active && (
                 <motion.span
@@ -93,7 +94,7 @@ export const HQHeader: React.FC<HQHeaderProps> = ({
       {/* RIGHT — Clock, Brain, Agents, HITL */}
       <div className="flex items-center gap-2">
         {/* Live clock */}
-        <span className="hidden select-none flex-col items-end leading-tight lg:flex">
+        <span className="hidden select-none flex-col items-end leading-tight 2xl:flex">
           <span className="text-[11px] font-mono text-slate-200">{time}</span>
           <span className="text-[9px] font-mono text-sky-500/80 tracking-widest">1× PACE</span>
         </span>
@@ -101,7 +102,7 @@ export const HQHeader: React.FC<HQHeaderProps> = ({
         {/* Brain vault */}
         <button
           onClick={onOpenBrainVault}
-          className="flex items-center gap-1.5 rounded-md border border-sky-500/30 bg-sky-500/10 px-2.5 py-1 text-[10px] font-semibold text-sky-300 transition hover:bg-sky-500/20"
+          className="flex items-center gap-1.5 rounded-md border border-sky-500/30 bg-sky-500/10 px-2.5 min-h-9 py-1 text-[10px] font-semibold text-sky-300 transition hover:bg-sky-500/20"
         >
           <Brain className="h-3 w-3" />
           Brain Vault
@@ -115,7 +116,7 @@ export const HQHeader: React.FC<HQHeaderProps> = ({
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.7, opacity: 0 }}
               onClick={onOpenApprovals}
-              className="flex items-center gap-1 rounded-md bg-rose-500/20 px-2 py-1 text-[10px] font-bold text-rose-200 ring-1 ring-rose-500/40 transition hover:bg-rose-500/30"
+              className="flex items-center gap-1 rounded-md bg-rose-500/20 px-2 min-h-9 py-1 text-[10px] font-bold text-rose-200 ring-1 ring-rose-500/40 transition hover:bg-rose-500/30"
             >
               <span className="live-dot h-1.5 w-1.5 rounded-full bg-rose-400" />
               {pendingApprovals} pending
@@ -127,7 +128,7 @@ export const HQHeader: React.FC<HQHeaderProps> = ({
         <div className="relative">
           <button
             onClick={() => setRosterOpen((v) => !v)}
-            className="flex items-center gap-1.5 rounded-md border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 text-[10px] font-semibold text-slate-300 transition hover:bg-white/[0.07]"
+            className="flex items-center gap-1.5 rounded-md border border-white/[0.08] bg-white/[0.03] px-2.5 min-h-9 py-1 text-[10px] font-semibold text-slate-300 transition hover:bg-white/[0.07]"
           >
             <span className="live-dot h-1.5 w-1.5 rounded-full bg-lime-400" />
             {totalAgents} Agents

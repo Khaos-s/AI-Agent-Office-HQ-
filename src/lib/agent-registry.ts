@@ -1,7 +1,9 @@
+import { STATIONS, project, roomAt, isInsideCampus } from "./campus-layout";
+import { agentPositionAt } from "./agent-movement";
 import { AgentProfile, CampusStatus, CampusStats, RoomLocation, RoutingDestination } from "@/types";
 export type { RoutingDestination };
 
-export const INITIAL_24_AGENTS: AgentProfile[] = [
+const AGENT_PROFILES: AgentProfile[] = [
   // 1. Central Holographic Command / The Brain
   {
     id: "josiah",
@@ -547,6 +549,13 @@ export const INITIAL_24_AGENTS: AgentProfile[] = [
   },
 ];
 
+export const INITIAL_24_AGENTS: AgentProfile[] = AGENT_PROFILES.map(agent => {
+  const station = STATIONS[agent.id];
+  const deskCoordinates = project(station.x, station.y);
+  const currentCoordinates = agent.id === "josiah" ? project(195, 755) : deskCoordinates;
+  return { ...agent, deskCoordinates, currentCoordinates: { ...currentCoordinates }, currentRoom: roomAt(currentCoordinates.x, currentCoordinates.y)!.type };
+});
+
 let agentsState: AgentProfile[] = JSON.parse(JSON.stringify(INITIAL_24_AGENTS));
 
 export function getAllAgents(): AgentProfile[] {
@@ -562,7 +571,13 @@ export function moveAgentToCoords(id: string, x: number, y: number): AgentProfil
   if (!agent) {
     throw new Error(`Agent with id "${id}" not found.`);
   }
+  if (!isInsideCampus(x, y)) throw new Error("Choose a position inside the office.");
+  const now = Date.now();
+  agent.currentCoordinates = agentPositionAt(agent, now);
+  agent.movement = { from: { ...agent.currentCoordinates }, startedAt: now };
   agent.targetCoordinates = { x, y, z: 0 };
+  const room = roomAt(x, y);
+  if (room) agent.currentRoom = room.type;
   agent.speechBubble = "Moving to coordinates on campus.";
   return agent;
 }
@@ -573,17 +588,21 @@ export function routeAgent(id: string, destination: RoutingDestination): AgentPr
     throw new Error(`Agent with id "${id}" not found.`);
   }
 
+  const now = Date.now();
+  agent.currentCoordinates = agentPositionAt(agent, now);
+  agent.movement = { from: { ...agent.currentCoordinates }, startedAt: now };
+
   switch (destination) {
     case "desk":
       agent.targetCoordinates = { ...agent.deskCoordinates };
-      agent.currentRoom = "focus_work";
+      agent.currentRoom = STATIONS[agent.id].room.type;
       agent.status = "working";
       agent.currentTask = `Focused work at assigned desk in ${agent.department}`;
       agent.speechBubble = "Walking to my desk to work.";
       break;
 
     case "pantry":
-      agent.targetCoordinates = { x: 120 + (Math.random() * 20 - 10), y: 265 + (Math.random() * 15 - 7), z: 0 };
+      agent.targetCoordinates = project(80 + agentsState.indexOf(agent) % 4 * 42, 460 + Math.floor(agentsState.indexOf(agent) / 4) * 12);
       agent.currentRoom = "pantry";
       agent.status = "eating";
       agent.currentTask = "Grabbed a coffee and catching up in Pantry & Canteen";
@@ -591,7 +610,7 @@ export function routeAgent(id: string, destination: RoutingDestination): AgentPr
       break;
 
     case "gym":
-      agent.targetCoordinates = { x: 230 + (Math.random() * 20 - 10), y: 375 + (Math.random() * 15 - 7), z: 0 };
+      agent.targetCoordinates = project(80 + agentsState.indexOf(agent) % 4 * 42, 740 + Math.floor(agentsState.indexOf(agent) / 4) * 12);
       agent.currentRoom = "gym";
       agent.status = "gym";
       agent.currentTask = "Active recovery workout in Rec & Gym";
@@ -599,7 +618,7 @@ export function routeAgent(id: string, destination: RoutingDestination): AgentPr
       break;
 
     case "brain":
-      agent.targetCoordinates = { x: 400 + (Math.random() * 30 - 15), y: 265 + (Math.random() * 20 - 10), z: 0 };
+      agent.targetCoordinates = project(350 + agentsState.indexOf(agent) % 4 * 42, 485 + Math.floor(agentsState.indexOf(agent) / 4) * 8);
       agent.currentRoom = "brain";
       agent.status = "meeting";
       agent.currentTask = "High-priority all-hands alignment at The Brain";
@@ -626,21 +645,13 @@ export function updateAgentStatus(
   return agent;
 }
 
-export function updateAgentPositions(): void {
+export function updateAgentPositions(now = Date.now()): void {
   for (const agent of agentsState) {
-    if (agent.targetCoordinates) {
-      const dx = agent.targetCoordinates.x - agent.currentCoordinates.x;
-      const dy = agent.targetCoordinates.y - agent.currentCoordinates.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-
-      if (dist < 3) {
-        agent.currentCoordinates.x = agent.targetCoordinates.x;
-        agent.currentCoordinates.y = agent.targetCoordinates.y;
-        delete agent.targetCoordinates;
-      } else {
-        agent.currentCoordinates.x += (dx / dist) * Math.min(dist, 4.5);
-        agent.currentCoordinates.y += (dy / dist) * Math.min(dist, 4.5);
-      }
+    agent.currentCoordinates = agentPositionAt(agent, now);
+    if (agent.targetCoordinates && Math.hypot(agent.currentCoordinates.x - agent.targetCoordinates.x, agent.currentCoordinates.y - agent.targetCoordinates.y) < 0.01) {
+      agent.currentCoordinates = { ...agent.targetCoordinates };
+      delete agent.targetCoordinates;
+      delete agent.movement;
     }
   }
 }

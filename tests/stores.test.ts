@@ -58,7 +58,7 @@ describe("Agent Registry & Campus Roster", () => {
     expect(fetched?.status).toBe("working");
   });
 
-  it("routes agents to rooms with A* target coordinates", () => {
+  it("routes agents to rooms with target coordinates", () => {
     const routed = routeAgent("josiah", "brain");
     expect(routed.currentRoom).toBe("brain");
     expect(routed.status).toBe("meeting");

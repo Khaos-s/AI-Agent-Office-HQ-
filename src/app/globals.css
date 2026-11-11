@@ -76,3 +76,7 @@ html, body {
 @keyframes border-spin {
   to { --angle: 360deg; }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
+}

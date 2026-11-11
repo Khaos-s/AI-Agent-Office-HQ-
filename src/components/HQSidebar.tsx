@@ -35,6 +35,8 @@ const STAT_ROWS = [
 ] as const;
 
 interface HQSidebarProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   stats: CampusStats;
   agents: AgentProfile[];
   selectedAgent: AgentProfile | null;
@@ -46,6 +48,8 @@ interface HQSidebarProps {
 }
 
 export const HQSidebar: React.FC<HQSidebarProps> = ({
+  open,
+  onOpenChange,
   stats,
   agents,
   selectedAgent,
@@ -55,7 +59,6 @@ export const HQSidebar: React.FC<HQSidebarProps> = ({
   onTriggerTestHITL,
   onPromptSuccess,
 }) => {
-  const [open, setOpen]       = useState(true);
   const [prevStats, setPrev]  = useState(stats);
   const sorted = [...agents].sort((a, b) => a.name.localeCompare(b.name));
   const agent  = selectedAgent || agents[0];
@@ -73,7 +76,9 @@ export const HQSidebar: React.FC<HQSidebarProps> = ({
     <>
       {/* Toggle tab — always visible */}
       <motion.button
-        onClick={() => setOpen((v) => !v)}
+        aria-label={open ? "Hide command panel" : "Show command panel"}
+        aria-expanded={open}
+        onClick={() => onOpenChange(!open)}
         animate={{ right: open ? 316 : 0 }}
         transition={{ type: "spring", stiffness: 320, damping: 32 }}
         className="fixed top-1/2 z-50 -translate-y-1/2 rounded-l-lg border border-r-0 border-white/[0.08] bg-[#0d1117] px-1.5 py-3 text-[9px] font-semibold uppercase tracking-widest text-slate-500 shadow-xl transition hover:text-slate-200"
@@ -91,14 +96,14 @@ export const HQSidebar: React.FC<HQSidebarProps> = ({
             animate={{ x: 0,   opacity: 1 }}
             exit={{   x: 320, opacity: 0 }}
             transition={{ type: "spring", stiffness: 320, damping: 32 }}
-            className="slim-scroll fixed right-0 top-11 z-40 flex h-[calc(100vh-44px)] w-80 flex-col gap-0 overflow-y-auto border-l border-white/[0.07] bg-[#07090f]/95 backdrop-blur-xl"
+            className="slim-scroll fixed right-0 top-11 z-40 flex h-[calc(100dvh-44px)] w-80 flex-col gap-0 overflow-y-auto border-l border-white/[0.07] bg-[#07090f]/95 backdrop-blur-xl"
           >
             {/* Header */}
             <div className="flex items-center justify-between border-b border-white/[0.07] px-4 py-3">
               <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
                 Command Panel
               </span>
-              <button onClick={() => setOpen(false)} className="text-slate-600 transition hover:text-slate-200">
+              <button aria-label="Close command panel" onClick={() => onOpenChange(false)} className="text-slate-600 transition hover:text-slate-200">
                 <X className="h-3.5 w-3.5" />
               </button>
             </div>
@@ -294,7 +299,7 @@ export const HQSidebar: React.FC<HQSidebarProps> = ({
               {agent && (
                 <>
                   <p className="mb-2 mt-4 text-[9px] font-semibold uppercase tracking-widest text-slate-500">
-                    Direct routing (A* walk)
+                    Direct routing
                   </p>
                   <div className="grid grid-cols-2 gap-2">
                     {(

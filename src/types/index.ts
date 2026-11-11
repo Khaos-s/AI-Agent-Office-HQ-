@@ -48,6 +48,7 @@ export interface AgentProfile {
   currentCoordinates: { x: number; y: number; z?: number };
   targetCoordinates?: { x: number; y: number; z?: number };
   
+  movement?: { from: { x: number; y: number }; startedAt: number };
   currentRoom: RoomLocation;
   status: CampusStatus;
   currentTask: string;
