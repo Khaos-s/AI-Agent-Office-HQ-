@@ -2,21 +2,16 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "AI Agent Office HQ",
-  description: "Web-based multi-agent operations center with 2D virtual office canvas, shared brain, and HITL gate",
+  title: "EasyUp HQ Command",
+  description: "AI Agent Operations Center — 2D Campus, Shared Brain, HITL Gate",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className="bg-slate-950 text-slate-100 min-h-screen antialiased">
+    <html lang="en" className="h-full">
+      <body className="h-full bg-[#07090f] text-slate-100 antialiased overflow-hidden">
         {children}
       </body>
     </html>
   );
 }
-

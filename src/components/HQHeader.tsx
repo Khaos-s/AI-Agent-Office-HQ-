@@ -1,201 +1,171 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { AgentProfile, RoomLocation } from "@/types";
-import { Brain, ChevronDown, Layers } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { RoomLocation, AgentProfile } from "@/types";
+import { Brain, ChevronDown, X } from "lucide-react";
+
+const NAV_ROOMS: { id: RoomLocation; label: string }[] = [
+  { id: "overview",    label: "Overview"      },
+  { id: "focus_work",  label: "Focus Work"    },
+  { id: "all_hands",   label: "All Hands"     },
+  { id: "pantry",      label: "Pantry"        },
+  { id: "gym",         label: "Rec & Gym"     },
+];
 
 interface HQHeaderProps {
   currentRoom: RoomLocation;
   onRoomSelect: (room: RoomLocation) => void;
-  viewMode: "2d" | "3d";
-  onToggleViewMode: (mode: "2d" | "3d") => void;
   totalAgents: number;
   onOpenBrainVault: () => void;
-  agents?: AgentProfile[];
-  onSelectAgent?: (agent: AgentProfile) => void;
+  agents: AgentProfile[];
+  onSelectAgent: (agent: AgentProfile) => void;
+  pendingApprovals: number;
+  onOpenApprovals: () => void;
 }
 
 export const HQHeader: React.FC<HQHeaderProps> = ({
   currentRoom,
   onRoomSelect,
-  viewMode,
-  onToggleViewMode,
   totalAgents,
   onOpenBrainVault,
-  agents = [],
+  agents,
   onSelectAgent,
+  pendingApprovals,
+  onOpenApprovals,
 }) => {
-  const [time, setTime] = useState<string>("");
-  const [isRosterDropdownOpen, setIsRosterDropdownOpen] = useState(false);
+  const [time, setTime] = useState("");
+  const [rosterOpen, setRosterOpen] = useState(false);
 
   useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      setTime(now.toLocaleTimeString("en-US", { hour12: true }) + " PHT");
-    };
-    updateTime();
-    const interval = setInterval(updateTime, 1000);
-    return () => clearInterval(interval);
+    const tick = () =>
+      setTime(new Date().toLocaleTimeString("en-US", { hour12: true }) + " PHT");
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
   }, []);
 
   return (
-    <header className="w-full bg-[#050b14]/95 border-b border-cyan-950/80 px-4 py-2.5 sticky top-0 z-40 backdrop-blur-md">
-      <div className="w-full flex flex-col xl:flex-row items-center justify-between gap-3">
-        {/* Left: Organization Title */}
-        <div className="flex items-center space-x-3">
-          <div className="w-9 h-9 rounded-lg bg-cyan-950 border border-cyan-500/40 flex items-center justify-center text-cyan-400 font-mono font-bold shadow-lg shadow-cyan-950/50 text-base">
-            HQ
-          </div>
-          <div>
-            <h1 className="text-sm font-bold text-slate-100 uppercase tracking-wider font-mono flex items-center gap-2">
-              <span>EASYUP SOFTWARE SOLUTION // HQ COMMAND</span>
-            </h1>
-            <p className="text-[10px] text-cyan-400/80 font-mono tracking-wide">
-              ILOILO CITY • BRANCH: <span className="text-cyan-300">office-v3</span>
-            </p>
-          </div>
+    <motion.header
+      initial={{ y: -48, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      className="relative z-40 flex h-11 shrink-0 items-center justify-between border-b border-white/[0.07] bg-[#07090f]/90 px-4 backdrop-blur-md"
+    >
+      {/* LEFT — Brand */}
+      <div className="flex items-center gap-3">
+        <div className="flex h-6 w-6 items-center justify-center rounded bg-sky-500/20 ring-1 ring-sky-500/40">
+          <span className="text-[9px] font-black tracking-tight text-sky-300">HQ</span>
         </div>
+        <div className="hidden sm:block">
+          <span className="text-[11px] font-semibold uppercase tracking-[.18em] text-slate-100">
+            EasyUp Software Solution
+          </span>
+          <span className="ml-2 text-[9px] text-slate-500">// HQ COMMAND · office-v3</span>
+        </div>
+      </div>
 
-        {/* Center: Navigation Room Pills */}
-        <nav className="flex items-center space-x-1.5 bg-slate-950/80 p-1 rounded-xl border border-slate-800 text-[11px] font-mono overflow-x-auto">
-          <button
-            onClick={() => onRoomSelect("overview")}
-            className={`px-3 py-1 rounded-lg transition-all ${
-              currentRoom === "overview"
-                ? "bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/30"
-                : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
-            }`}
-          >
-            OVERVIEW
-          </button>
-          <button
-            onClick={() => onRoomSelect("focus_work")}
-            className={`px-3 py-1 rounded-lg transition-all ${
-              currentRoom === "focus_work"
-                ? "bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/30"
-                : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
-            }`}
-          >
-            FOCUS WORK
-          </button>
-          <button
-            onClick={() => onRoomSelect("all_hands")}
-            className={`px-3 py-1 rounded-lg transition-all ${
-              currentRoom === "all_hands"
-                ? "bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/30"
-                : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
-            }`}
-          >
-            ALL HANDS
-          </button>
-          <button
-            onClick={() => onRoomSelect("pantry")}
-            className={`px-3 py-1 rounded-lg transition-all ${
-              currentRoom === "pantry"
-                ? "bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/30"
-                : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
-            }`}
-          >
-            PANTRY & CANTEEN
-          </button>
-          <button
-            onClick={() => onRoomSelect("gym")}
-            className={`px-3 py-1 rounded-lg transition-all ${
-              currentRoom === "gym"
-                ? "bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/30"
-                : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
-            }`}
-          >
-            REC & GYM
-          </button>
-        </nav>
-
-        {/* Right: Real-time pace, Roster & 3D/2D Toggle */}
-        <div className="flex items-center space-x-3 text-xs font-mono">
-          <div className="hidden lg:flex flex-col items-end">
-            <span className="text-slate-200 font-bold text-[11px]">{time || "10:28:14 PM PHT"}</span>
-            <span className="text-[9px] text-cyan-400 uppercase tracking-widest">
-              1x REAL-TIME WORK PACE
-            </span>
-          </div>
-
-          <button
-            onClick={onOpenBrainVault}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-950/70 border border-sky-500/40 text-sky-300 hover:bg-sky-900/60 transition-all text-xs font-bold shadow-md"
-          >
-            <Brain className="w-3.5 h-3.5 text-sky-400" />
-            <span>BRAIN VAULT</span>
-          </button>
-
-          {/* 24 AGENTS ROSTER v Dropdown Trigger (Matching Screenshot) */}
-          <div className="relative">
+      {/* CENTER — Room nav */}
+      <nav className="flex items-center gap-0.5 rounded-lg border border-white/[0.07] bg-white/[0.02] p-0.5">
+        {NAV_ROOMS.map((room) => {
+          const active = currentRoom === room.id;
+          return (
             <button
-              onClick={() => setIsRosterDropdownOpen(!isRosterDropdownOpen)}
-              className="px-3 py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-950 border border-emerald-500/40 text-emerald-400 font-bold text-xs flex items-center gap-1.5 transition-all shadow-md"
+              key={room.id}
+              onClick={() => onRoomSelect(room.id)}
+              className="relative px-3 py-1 text-[11px] font-medium transition"
             >
-              <Layers className="w-3.5 h-3.5 text-emerald-400" />
-              <span>{totalAgents} AGENTS ROSTER</span>
-              <ChevronDown className="w-3 h-3 text-emerald-400" />
+              {active && (
+                <motion.span
+                  layoutId="nav-pill"
+                  className="absolute inset-0 rounded-md bg-sky-500/20 ring-1 ring-sky-500/40"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
+              <span className={`relative z-10 ${active ? "text-sky-200" : "text-slate-500 hover:text-slate-200"}`}>
+                {room.label}
+              </span>
             </button>
+          );
+        })}
+      </nav>
 
-            {/* Dropdown Menu */}
-            {isRosterDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-72 bg-slate-950 border border-slate-800 rounded-xl shadow-2xl p-2 z-50 max-h-80 overflow-y-auto">
-                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider px-2 py-1 border-b border-slate-800">
-                  Campus Agent Roster ({agents.length})
+      {/* RIGHT — Clock, Brain, Agents, HITL */}
+      <div className="flex items-center gap-2">
+        {/* Live clock */}
+        <span className="hidden select-none flex-col items-end leading-tight lg:flex">
+          <span className="text-[11px] font-mono text-slate-200">{time}</span>
+          <span className="text-[9px] font-mono text-sky-500/80 tracking-widest">1× PACE</span>
+        </span>
+
+        {/* Brain vault */}
+        <button
+          onClick={onOpenBrainVault}
+          className="flex items-center gap-1.5 rounded-md border border-sky-500/30 bg-sky-500/10 px-2.5 py-1 text-[10px] font-semibold text-sky-300 transition hover:bg-sky-500/20"
+        >
+          <Brain className="h-3 w-3" />
+          Brain Vault
+        </button>
+
+        {/* Pending approvals badge */}
+        <AnimatePresence>
+          {pendingApprovals > 0 && (
+            <motion.button
+              initial={{ scale: 0.7, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.7, opacity: 0 }}
+              onClick={onOpenApprovals}
+              className="flex items-center gap-1 rounded-md bg-rose-500/20 px-2 py-1 text-[10px] font-bold text-rose-200 ring-1 ring-rose-500/40 transition hover:bg-rose-500/30"
+            >
+              <span className="live-dot h-1.5 w-1.5 rounded-full bg-rose-400" />
+              {pendingApprovals} pending
+            </motion.button>
+          )}
+        </AnimatePresence>
+
+        {/* Agents roster dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => setRosterOpen((v) => !v)}
+            className="flex items-center gap-1.5 rounded-md border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 text-[10px] font-semibold text-slate-300 transition hover:bg-white/[0.07]"
+          >
+            <span className="live-dot h-1.5 w-1.5 rounded-full bg-lime-400" />
+            {totalAgents} Agents
+            <ChevronDown className="h-3 w-3 text-slate-500" />
+          </button>
+
+          <AnimatePresence>
+            {rosterOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -6, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -6, scale: 0.97 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
+                className="absolute right-0 top-full mt-1.5 w-64 overflow-hidden rounded-xl border border-white/[0.08] bg-[#0d1117] shadow-2xl"
+              >
+                <div className="border-b border-white/[0.06] px-3 py-2 text-[9px] font-semibold uppercase tracking-widest text-slate-500">
+                  Campus Roster ({agents.length})
                 </div>
-                <div className="space-y-1 mt-1">
-                  {agents.map((agent) => (
+                <div className="slim-scroll max-h-72 overflow-y-auto py-1">
+                  {agents.map((a) => (
                     <button
-                      key={agent.id}
-                      onClick={() => {
-                        if (onSelectAgent) onSelectAgent(agent);
-                        setIsRosterDropdownOpen(false);
-                      }}
-                      className="w-full text-left px-2 py-1.5 rounded hover:bg-slate-900 flex items-center justify-between text-[11px] text-slate-200 transition-colors"
+                      key={a.id}
+                      onClick={() => { onSelectAgent(a); setRosterOpen(false); }}
+                      className="flex w-full items-center justify-between px-3 py-1.5 text-left text-[11px] transition hover:bg-white/[0.04]"
                     >
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="w-2 h-2 rounded-full"
-                          style={{ backgroundColor: agent.color }}
-                        ></span>
-                        <span className="font-bold">{agent.name}</span>
-                      </div>
-                      <span className="text-[9px] text-slate-400 uppercase">
-                        {agent.currentRoom.replace("_", " ")}
+                      <span className="flex items-center gap-2 text-slate-200">
+                        <span className="h-1.5 w-1.5 rounded-full" style={{ background: a.color }} />
+                        {a.name}
                       </span>
+                      <span className="text-[9px] capitalize text-slate-500">{a.currentRoom.replace(/_/g, " ")}</span>
                     </button>
                   ))}
                 </div>
-              </div>
+              </motion.div>
             )}
-          </div>
-
-          {/* 3D / 2D Toggle Switcher (Matching Screenshot) */}
-          <div className="flex items-center bg-slate-900 p-0.5 rounded-lg border border-slate-800">
-            <button
-              onClick={() => onToggleViewMode("3d")}
-              className={`px-2.5 py-1 rounded text-xs transition-all ${
-                viewMode === "3d"
-                  ? "bg-cyan-600 text-white font-bold"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              3D View
-            </button>
-            <button
-              onClick={() => onToggleViewMode("2d")}
-              className={`px-2.5 py-1 rounded text-xs transition-all ${
-                viewMode === "2d"
-                  ? "bg-cyan-600 text-white font-bold"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              2D View
-            </button>
-          </div>
+          </AnimatePresence>
         </div>
       </div>
-    </header>
+    </motion.header>
   );
 };

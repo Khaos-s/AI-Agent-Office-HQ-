@@ -66,7 +66,7 @@ export async function PATCH(
       try {
         updateAgentStatus(
           current.agentId,
-          "idle",
+          "break",
           `Standby (Action rejected: ${current.title})`,
           "Action was rejected by human operator."
         );

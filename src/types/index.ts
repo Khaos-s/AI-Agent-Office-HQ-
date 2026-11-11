@@ -7,11 +7,13 @@ export type CampusStatus =
   | "arriving"
   | "waiting_approval"
   | "awaiting_approval"
+  | "idle"
   | "thinking"
-  | "error"
-  | "idle";
+  | "error";
 
 export type AgentStatus = CampusStatus;
+
+export type RoutingDestination = "desk" | "pantry" | "gym" | "brain";
 
 export type RoomLocation =
   | "overview"
@@ -22,8 +24,6 @@ export type RoomLocation =
   | "brain"
   | "server_bay"
   | "exterior";
-
-export type RoutingDestination = "desk" | "pantry" | "gym" | "brain";
 
 export type ModelTier = "opus" | "sonnet" | "haiku";
 

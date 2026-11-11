@@ -1,280 +1,239 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { AgentProfile, HITLApproval, RoomLocation, CampusStats, RoutingDestination } from "@/types";
-import { HQHeader } from "@/components/HQHeader";
-import { CampusViewport } from "@/components/CampusViewport";
-import { HQSidebar } from "@/components/HQSidebar";
-import { HITLQueueModal } from "@/components/HITLQueueModal";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  AgentProfile,
+  HITLApproval,
+  RoomLocation,
+  CampusStats,
+  RoutingDestination,
+} from "@/types";
+import { HQHeader }        from "@/components/HQHeader";
+import { CampusViewport }  from "@/components/CampusViewport";
+import { HQSidebar }       from "@/components/HQSidebar";
+import { HITLQueueModal }  from "@/components/HITLQueueModal";
 import { BrainVaultModal } from "@/components/BrainVaultModal";
 import { AgentDetailModal } from "@/components/AgentDetailModal";
-import { CheckCircle2, ShieldAlert } from "lucide-react";
+import { CheckCircle2, AlertCircle } from "lucide-react";
+
+type Notif = { id: number; msg: string; ok: boolean };
 
 export default function Home() {
-  const [viewMode, setViewMode] = useState<"2d" | "3d">("2d");
-  const [currentRoom, setCurrentRoom] = useState<RoomLocation>("overview");
-  const [agents, setAgents] = useState<AgentProfile[]>([]);
+  const [currentRoom,   setCurrentRoom]   = useState<RoomLocation>("overview");
+  const [agents,        setAgents]        = useState<AgentProfile[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<AgentProfile | null>(null);
-  const [approvals, setApprovals] = useState<HITLApproval[]>([]);
-  const [campusStats, setCampusStats] = useState<CampusStats>({
-    total: 24,
-    working: 6,
-    eating: 1,
-    gym: 2,
-    meeting: 3,
-    breakCount: 12,
-    arriving: 0,
-    waitingApproval: 0,
-    openTasks: 8,
-    accessories: 13,
+  const [approvals,     setApprovals]     = useState<HITLApproval[]>([]);
+  const [campusStats,   setCampusStats]   = useState<CampusStats>({
+    total: 24, working: 6, eating: 1, gym: 2, meeting: 3,
+    breakCount: 12, arriving: 0, waitingApproval: 0, openTasks: 8, accessories: 13,
   });
 
-  const [isApprovalsOpen, setIsApprovalsOpen] = useState(false);
-  const [isBrainVaultOpen, setIsBrainVaultOpen] = useState(false);
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [notification, setNotification] = useState<string | null>(null);
+  const [approvalsOpen,  setApprovalsOpen]  = useState(false);
+  const [brainVaultOpen, setBrainVaultOpen] = useState(false);
+  const [detailOpen,     setDetailOpen]     = useState(false);
+  const [notifs,         setNotifs]         = useState<Notif[]>([]);
+  const notifCounter = React.useRef(0);
 
-  const showNotification = (msg: string) => {
-    setNotification(msg);
-    setTimeout(() => setNotification(null), 4000);
+  const push = (msg: string, ok = true) => {
+    const id = ++notifCounter.current;
+    setNotifs((p) => [...p, { id, msg, ok }]);
+    setTimeout(() => setNotifs((p) => p.filter((n) => n.id !== id)), 4000);
   };
 
-  // Sync state from server
+  // ── Server sync ───────────────────────────────────────────────────────────
   const fetchData = useCallback(async () => {
     try {
-      const [officeRes, approvalsRes] = await Promise.all([
+      const [offRes, appRes] = await Promise.all([
         fetch("/api/office/state").then((r) => r.json()),
         fetch("/api/approvals").then((r) => r.json()),
       ]);
-
-      if (officeRes.success) {
-        setAgents(officeRes.agents);
-        if (officeRes.campusStats) {
-          setCampusStats(officeRes.campusStats);
-        }
+      if (offRes.success) {
+        setAgents(offRes.agents);
+        if (offRes.campusStats) setCampusStats(offRes.campusStats);
       }
-      if (approvalsRes.success) {
-        setApprovals(approvalsRes.approvals);
-      }
-    } catch (e) {
-      console.error("Failed to fetch office state", e);
-    }
+      if (appRes.success) setApprovals(appRes.approvals);
+    } catch { /* network hiccup – keep last state */ }
   }, []);
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 2500);
-    return () => clearInterval(interval);
+    const id = setInterval(fetchData, 2500);
+    return () => clearInterval(id);
   }, [fetchData]);
 
-  // Keep selected agent synchronized
+  // Keep selectedAgent in sync with server state
   useEffect(() => {
     if (selectedAgent) {
-      const updated = agents.find((a) => a.id === selectedAgent.id);
-      if (updated) setSelectedAgent(updated);
-    } else if (agents.length > 0) {
-      setSelectedAgent(agents.find((a) => a.id === "josiah") || agents[0]);
+      const up = agents.find((a) => a.id === selectedAgent.id);
+      if (up) setSelectedAgent(up);
+    } else if (agents.length) {
+      setSelectedAgent(agents.find((a) => a.id === "josiah") ?? agents[0]);
     }
-  }, [agents, selectedAgent]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agents]);
 
-  // Direct Individual Routing (A* Walking)
-  const handleRouteAgent = async (agentId: string, destination: RoutingDestination) => {
-    try {
-      const res = await fetch("/api/office/state", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: agentId, destination }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setAgents((prev) => prev.map((a) => (a.id === agentId ? data.agent : a)));
-        showNotification(`Dispatched @${agentId} walking to ${destination.toUpperCase()}.`);
-        fetchData();
-      }
-    } catch (e) {
-      console.error(e);
+  // ── Handlers ──────────────────────────────────────────────────────────────
+  const handleRoute = async (agentId: string, dest: RoutingDestination) => {
+    const res  = await fetch("/api/office/state", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: agentId, destination: dest }),
+    }).then((r) => r.json());
+    if (res.success) {
+      setAgents((p) => p.map((a) => (a.id === agentId ? res.agent : a)));
+      push(`@${agentId} walking to ${dest}`);
+      fetchData();
     }
   };
 
-  // Direct Click-to-Move Coordinates
-  const handleMoveAgentDirectly = async (agentId: string, x: number, y: number) => {
-    try {
-      const res = await fetch("/api/office/state", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: agentId, targetCoordinates: { x, y } }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setAgents((prev) => prev.map((a) => (a.id === agentId ? data.agent : a)));
-        showNotification(`Dispatched @${agentId} walking to target position.`);
-        fetchData();
-      }
-    } catch (e) {
-      console.error(e);
+  const handleMoveXY = async (agentId: string, x: number, y: number) => {
+    const res = await fetch("/api/office/state", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: agentId, targetCoordinates: { x, y } }),
+    }).then((r) => r.json());
+    if (res.success) {
+      setAgents((p) => p.map((a) => (a.id === agentId ? res.agent : a)));
+      push(`@${agentId} moving to position`);
+      fetchData();
     }
   };
 
-  // Update Agent Status
-  const handleUpdateAgentStatus = async (
-    id: string,
-    status: any,
-    currentTask?: string,
-    speechBubble?: string
+  const handleUpdateStatus = async (
+    id: string, status: string, currentTask?: string, speechBubble?: string,
   ) => {
-    try {
-      const res = await fetch("/api/office/state", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, status, currentTask, speechBubble }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setAgents((prev) => prev.map((a) => (a.id === id ? data.agent : a)));
-        showNotification(`Updated @${id} status.`);
-        fetchData();
-      }
-    } catch (e) {
-      console.error(e);
+    const res = await fetch("/api/office/state", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, status, currentTask, speechBubble }),
+    }).then((r) => r.json());
+    if (res.success) {
+      setAgents((p) => p.map((a) => (a.id === id ? res.agent : a)));
+      push(`@${id} status updated`);
+      fetchData();
     }
   };
 
-  // Trigger HITL Sensitive Operation
-  const handleTriggerHITLAction = async (agentId: string) => {
-    try {
-      const res = await fetch("/api/approvals", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          agentId,
-          actionType: "shopify_refund",
-          title: "Sensitive Action: High-Risk Refund",
-          description: "Customer refund request over $100 requiring Dual-Operator sign-off",
-          riskLevel: "high",
-          payload: { orderId: "5082", amount: 145.0, currency: "USD" },
-        }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        await handleUpdateAgentStatus(
-          agentId,
-          "waiting_approval",
-          "Awaiting operator sign-off in The Boss Desk",
-          "Action held at HITL gate!"
-        );
-        showNotification(`Action queued at The Boss Desk for @${agentId}.`);
-        setIsApprovalsOpen(true);
-      }
-    } catch (e) {
-      console.error(e);
+  const handleTriggerHITL = async (agentId: string) => {
+    const res = await fetch("/api/approvals", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        agentId, actionType: "shopify_refund",
+        title: "High-Risk Refund Request",
+        description: "Customer refund >$100 requires Dual-Operator sign-off",
+        riskLevel: "high",
+        payload: { orderId: "5082", amount: 145.0, currency: "USD" },
+      }),
+    }).then((r) => r.json());
+    if (res.success) {
+      await handleUpdateStatus(agentId, "waiting_approval", "Waiting at HITL gate", "Action held!");
+      push(`Action queued for @${agentId}`);
+      setApprovalsOpen(true);
     }
   };
 
-  // Resolve HITL Approval
-  const handleResolveApproval = async (
-    id: string,
-    action: "approve" | "reject",
-    comment?: string
-  ) => {
-    try {
-      const res = await fetch(`/api/approvals/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, reviewer: "Operator", comment }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        showNotification(`Approval action ${action}ed.`);
-        fetchData();
-      }
-    } catch (e) {
-      console.error(e);
-    }
+  const handleResolveApproval = async (id: string, action: "approve" | "reject", comment?: string) => {
+    const res = await fetch(`/api/approvals/${id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, reviewer: "Operator", comment }),
+    }).then((r) => r.json());
+    if (res.success) { push(`Approval ${action}d`); fetchData(); }
   };
 
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#050b14] text-slate-100 flex flex-col font-sans select-none overflow-x-hidden">
-      {/* Toast Notification */}
-      {notification && (
-        <div className="fixed bottom-5 right-5 z-50 bg-cyan-600 text-slate-950 font-mono font-bold px-4 py-2.5 rounded-xl shadow-2xl text-xs flex items-center gap-2 border border-cyan-400 animate-fade-in">
-          <CheckCircle2 className="w-4 h-4 text-emerald-300" />
-          <span>{notification}</span>
-        </div>
-      )}
+    <div className="flex h-full flex-col overflow-hidden bg-[#07090f]">
 
-      {/* Header Bar */}
+      {/* Slim header — 44 px */}
       <HQHeader
         currentRoom={currentRoom}
         onRoomSelect={setCurrentRoom}
-        viewMode={viewMode}
-        onToggleViewMode={setViewMode}
         totalAgents={campusStats.total}
-        onOpenBrainVault={() => setIsBrainVaultOpen(true)}
+        onOpenBrainVault={() => setBrainVaultOpen(true)}
         agents={agents}
-        onSelectAgent={(agent) => setSelectedAgent(agent)}
+        onSelectAgent={setSelectedAgent}
+        pendingApprovals={campusStats.waitingApproval}
+        onOpenApprovals={() => setApprovalsOpen(true)}
       />
 
-      {/* Main Command Surface */}
-      <div className="flex-1 p-3 md:p-5 flex flex-col xl:flex-row gap-4 max-w-[1720px] w-full mx-auto">
-        {/* Left/Center Viewport */}
-        <div className="flex-1 flex flex-col space-y-3">
-          <CampusViewport
-            viewMode={viewMode}
-            currentRoom={currentRoom}
-            agents={agents}
-            selectedAgentId={selectedAgent?.id || null}
-            onSelectAgent={(agent) => {
-              if (agent) {
-                setSelectedAgent(agent);
-              }
-            }}
-            onRoomChange={setCurrentRoom}
-            onMoveAgentDirectly={handleMoveAgentDirectly}
-          />
-        </div>
+      {/* Full-bleed campus canvas fills everything below header */}
+      <div className="relative flex-1 overflow-hidden">
+        <CampusViewport
+          currentRoom={currentRoom}
+          agents={agents}
+          selectedAgentId={selectedAgent?.id ?? null}
+          onSelectAgent={(a) => { if (a) setSelectedAgent(a); }}
+          onRoomChange={setCurrentRoom}
+          onMoveAgentDirectly={handleMoveXY}
+        />
 
-        {/* Right Command Sidebar */}
+        {/* Slide-over command panel */}
         <HQSidebar
           stats={campusStats}
           agents={agents}
           selectedAgent={selectedAgent}
-          onSelectAgent={(agent) => setSelectedAgent(agent)}
-          onRouteAgent={handleRouteAgent}
-          onOpenApprovals={() => setIsApprovalsOpen(true)}
-          onTriggerTestHITL={() => handleTriggerHITLAction(selectedAgent?.id || "gabriel")}
+          onSelectAgent={setSelectedAgent}
+          onRouteAgent={handleRoute}
+          onOpenApprovals={() => setApprovalsOpen(true)}
+          onTriggerTestHITL={() => handleTriggerHITL(selectedAgent?.id ?? "gabriel")}
         />
       </div>
 
-      {/* Modals */}
-      {isApprovalsOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-4xl relative">
-            <button
-              onClick={() => setIsApprovalsOpen(false)}
-              className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-slate-900 border border-slate-700 text-white flex items-center justify-center font-bold z-10"
+      {/* ── Toast stack ──────────────────────────────────────────────────── */}
+      <div className="pointer-events-none fixed bottom-5 left-1/2 z-[60] flex -translate-x-1/2 flex-col items-center gap-2">
+        <AnimatePresence>
+          {notifs.map((n) => (
+            <motion.div
+              key={n.id}
+              initial={{ opacity: 0, y: 12, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0,  scale: 1    }}
+              exit={{   opacity: 0, y: -8, scale: 0.95  }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-xs font-semibold shadow-2xl backdrop-blur-md ${
+                n.ok
+                  ? "border-lime-300/20 bg-lime-300/10 text-lime-200"
+                  : "border-rose-300/20 bg-rose-300/10 text-rose-200"
+              }`}
             >
-              ✕
-            </button>
-            <HITLQueueModal
-              approvals={approvals}
-              onResolve={handleResolveApproval}
-              isLoading={false}
-            />
-          </div>
-        </div>
-      )}
+              {n.ok
+                ? <CheckCircle2 className="h-4 w-4 text-lime-400" />
+                : <AlertCircle  className="h-4 w-4 text-rose-400" />}
+              {n.msg}
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
 
-      <BrainVaultModal
-        isOpen={isBrainVaultOpen}
-        onClose={() => setIsBrainVaultOpen(false)}
-      />
+      {/* ── Modals ───────────────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {approvalsOpen && (
+          <motion.div
+            key="approvals-backdrop"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-md"
+          >
+            <motion.div
+              initial={{ scale: 0.96, opacity: 0 }}
+              animate={{ scale: 1,    opacity: 1 }}
+              exit={{   scale: 0.96, opacity: 0 }}
+              className="relative w-full max-w-4xl"
+            >
+              <button
+                onClick={() => setApprovalsOpen(false)}
+                className="absolute -right-3 -top-3 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-[#17212b] text-white shadow-lg transition hover:bg-white/10"
+              >✕</button>
+              <HITLQueueModal approvals={approvals} onResolve={handleResolveApproval} isLoading={false} />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {isDetailModalOpen && selectedAgent && (
+      <BrainVaultModal isOpen={brainVaultOpen} onClose={() => setBrainVaultOpen(false)} />
+
+      {detailOpen && selectedAgent && (
         <AgentDetailModal
           agent={selectedAgent}
-          onClose={() => setIsDetailModalOpen(false)}
-          onUpdateStatus={handleUpdateAgentStatus}
-          onTriggerHITL={handleTriggerHITLAction}
+          onClose={() => setDetailOpen(false)}
+          onUpdateStatus={handleUpdateStatus}
+          onTriggerHITL={handleTriggerHITL}
         />
       )}
     </div>

@@ -239,14 +239,17 @@ export function renderIsometricCampus(
   tick: number,
   cameraZoom = 1,
   cameraPan = { x: 0, y: 0 },
-  activeRipples: RippleEffect[] = []
+  activeRipples: RippleEffect[] = [],
+  canvasW = CAMPUS_WIDTH,
+  canvasH = CAMPUS_HEIGHT,
 ): void {
   ctx.save();
-  ctx.clearRect(0, 0, CAMPUS_WIDTH, CAMPUS_HEIGHT);
+  ctx.clearRect(0, 0, canvasW, canvasH);
 
-  // Apply camera transformation
-  ctx.translate(CAMPUS_WIDTH / 2 + cameraPan.x, CAMPUS_HEIGHT / 2 + cameraPan.y);
+  // Apply camera transformation — pivot around canvas centre, then pan
+  ctx.translate(canvasW / 2 + cameraPan.x, canvasH / 2 + cameraPan.y);
   ctx.scale(cameraZoom, cameraZoom);
+  // Offset so the campus (designed around CAMPUS_WIDTH×CAMPUS_HEIGHT) is centred
   ctx.translate(-CAMPUS_WIDTH / 2, -CAMPUS_HEIGHT / 2);
 
   // 1. Draw Exterior & Surroundings (Lush dark lawn, road, crossing, trees)

@@ -1,8 +1,37 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { AgentProfile, CampusStats, RoutingDestination } from "@/types";
-import { ShieldAlert, ShieldCheck } from "lucide-react";
+import { X, ShieldAlert, ArrowRight } from "lucide-react";
+
+const STATUS_COLOR: Record<string, string> = {
+  working:          "#bef264",
+  eating:           "#fb923c",
+  gym:              "#38bdf8",
+  meeting:          "#a78bfa",
+  break:            "#fbbf24",
+  waiting_approval: "#f87171",
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  working:          "Working",
+  eating:           "In pantry",
+  gym:              "Rec & gym",
+  meeting:          "In meeting",
+  break:            "On break",
+  waiting_approval: "Needs approval",
+};
+
+const STAT_ROWS = [
+  { key: "working",          label: "Working",        color: "#bef264" },
+  { key: "meeting",          label: "In meeting",     color: "#a78bfa" },
+  { key: "eating",           label: "Eating",         color: "#fb923c" },
+  { key: "gym",              label: "In gym",         color: "#38bdf8" },
+  { key: "breakCount",       label: "On break",       color: "#fbbf24" },
+  { key: "arriving",         label: "Arriving",       color: "#64748b" },
+  { key: "waitingApproval",  label: "Needs approval", color: "#f87171" },
+] as const;
 
 interface HQSidebarProps {
   stats: CampusStats;
@@ -23,282 +52,262 @@ export const HQSidebar: React.FC<HQSidebarProps> = ({
   onOpenApprovals,
   onTriggerTestHITL,
 }) => {
-  const currentAgent = selectedAgent || agents[0];
+  const [open, setOpen]       = useState(true);
+  const [prevStats, setPrev]  = useState(stats);
+  const sorted = [...agents].sort((a, b) => a.name.localeCompare(b.name));
+  const agent  = selectedAgent || agents[0];
+  const color  = STATUS_COLOR[agent?.status ?? ""] ?? "#64748b";
 
-  const getStatusPill = (status: string) => {
-    switch (status) {
-      case "working":
-        return { label: "Working at Desk", bg: "bg-emerald-950/80 border-emerald-500/40 text-emerald-400" };
-      case "eating":
-        return { label: "Eating in Pantry", bg: "bg-orange-950/80 border-orange-500/40 text-orange-400" };
-      case "gym":
-        return { label: "Gym / Rec Break", bg: "bg-sky-950/80 border-sky-500/40 text-sky-400" };
-      case "meeting":
-        return { label: "In Scrum at The Brain", bg: "bg-purple-950/80 border-purple-500/40 text-purple-400" };
-      case "break":
-        return { label: "On Team Break", bg: "bg-amber-950/80 border-amber-500/40 text-amber-400" };
-      case "waiting_approval":
-        return { label: "Waiting on You (HITL)", bg: "bg-rose-950/80 border-rose-500/40 text-rose-400 animate-pulse" };
-      default:
-        return { label: "Active", bg: "bg-slate-900 border-slate-700 text-slate-300" };
-    }
-  };
+  // Track stat changes so we can flash numbers
+  useEffect(() => {
+    const timer = setTimeout(() => setPrev(stats), 1000);
+    return () => clearTimeout(timer);
+  }, [stats]);
 
-  const pill = currentAgent ? getStatusPill(currentAgent.status) : null;
-
-  // Alphabetically sorted agents to match screenshot order (Anthony, Arwin, Blaze, Bonnie...)
-  const sortedAgents = [...agents].sort((a, b) => a.name.localeCompare(b.name));
+  const statVal = (key: (typeof STAT_ROWS)[number]["key"]) => (stats as any)[key] as number;
 
   return (
-    <aside className="w-full xl:w-96 flex flex-col space-y-4 font-mono text-xs">
-      {/* 1. CAMPUS LIVE COUNTER (Matches Screenshot Exact Layout) */}
-      <div className="bg-[#050b14] border border-cyan-950 rounded-2xl p-4 shadow-xl">
-        <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5 mb-3">
-          <h2 className="text-[11px] font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-            CAMPUS LIVE COUNTER
-          </h2>
-          <span className="text-[10px] font-bold text-cyan-400 bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-500/30">
-            {stats.total} ONLINE
-          </span>
-        </div>
+    <>
+      {/* Toggle tab — always visible */}
+      <motion.button
+        onClick={() => setOpen((v) => !v)}
+        animate={{ right: open ? 316 : 0 }}
+        transition={{ type: "spring", stiffness: 320, damping: 32 }}
+        className="fixed top-1/2 z-50 -translate-y-1/2 rounded-l-lg border border-r-0 border-white/[0.08] bg-[#0d1117] px-1.5 py-3 text-[9px] font-semibold uppercase tracking-widest text-slate-500 shadow-xl transition hover:text-slate-200"
+        style={{ writingMode: "vertical-rl" }}
+      >
+        {open ? "→ Hide" : "← Panel"}
+      </motion.button>
 
-        <div className="space-y-1.5 text-[11px]">
-          <div className="flex items-center justify-between text-slate-300">
-            <span className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-              <span>WORKING</span>
-            </span>
-            <span className="font-bold text-emerald-400">{stats.working}</span>
-          </div>
-
-          <div className="flex items-center justify-between text-slate-300">
-            <span className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-orange-500"></span>
-              <span>EATING</span>
-            </span>
-            <span className="font-bold text-orange-400">{stats.eating}</span>
-          </div>
-
-          <div className="flex items-center justify-between text-slate-300">
-            <span className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-sky-500"></span>
-              <span>IN THE GYM</span>
-            </span>
-            <span className="font-bold text-sky-400">{stats.gym}</span>
-          </div>
-
-          <div className="flex items-center justify-between text-slate-300">
-            <span className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-purple-500"></span>
-              <span>IN MEETING</span>
-            </span>
-            <span className="font-bold text-purple-400">{stats.meeting}</span>
-          </div>
-
-          <div className="flex items-center justify-between text-slate-300">
-            <span className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-              <span>ON BREAK</span>
-            </span>
-            <span className="font-bold text-amber-400">{stats.breakCount}</span>
-          </div>
-
-          <div className="flex items-center justify-between text-slate-300">
-            <span className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-              <span>ARRIVING</span>
-            </span>
-            <span className="font-bold text-slate-400">{stats.arriving}</span>
-          </div>
-
-          <div className="flex items-center justify-between text-slate-300 pt-1 border-t border-slate-800/60">
-            <span className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
-              <span>WAITING ON YOU</span>
-            </span>
-            <span
-              className={`font-bold ${
-                stats.waitingApproval > 0
-                  ? "text-rose-400 font-extrabold animate-bounce"
-                  : "text-slate-400"
-              }`}
-            >
-              {stats.waitingApproval}
-            </span>
-          </div>
-        </div>
-
-        {/* Tasks and Accessories */}
-        <div className="grid grid-cols-2 gap-2 mt-3 pt-2.5 border-t border-slate-800/80 text-[10px] text-slate-400">
-          <div>
-            OPEN TASKS: <span className="font-bold text-slate-200">{stats.openTasks}</span>
-          </div>
-          <div>
-            ACCESSORIES: <span className="font-bold text-slate-200">{stats.accessories}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* 2. THE BOSS DESK // APPROVALS */}
-      <div className="bg-[#050b14] border border-cyan-950 rounded-2xl p-4 shadow-xl transition-all">
-        <div
-          onClick={onOpenApprovals}
-          className="flex items-center justify-between mb-2 cursor-pointer group"
-        >
-          <h2 className="text-[11px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5 group-hover:text-amber-300">
-            <span className="w-2 h-2 rounded-full bg-amber-400"></span>
-            THE BOSS DESK // APPROVALS
-          </h2>
-          <span
-            className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase transition-all ${
-              stats.waitingApproval > 0
-                ? "bg-rose-500/20 text-rose-400 border-rose-500/40 animate-pulse"
-                : "bg-amber-950/60 text-amber-300 border-amber-500/30"
-            }`}
+      {/* Slide-over panel */}
+      <AnimatePresence>
+        {open && (
+          <motion.aside
+            key="sidebar"
+            initial={{ x: 320, opacity: 0 }}
+            animate={{ x: 0,   opacity: 1 }}
+            exit={{   x: 320, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 320, damping: 32 }}
+            className="slim-scroll fixed right-0 top-11 z-40 flex h-[calc(100vh-44px)] w-80 flex-col gap-0 overflow-y-auto border-l border-white/[0.07] bg-[#07090f]/95 backdrop-blur-xl"
           >
-            {stats.waitingApproval} PENDING
-          </span>
-        </div>
-
-        <p
-          onClick={onOpenApprovals}
-          className="text-[11px] text-slate-400 leading-snug cursor-pointer hover:text-slate-200 transition-colors"
-        >
-          {stats.waitingApproval > 0
-            ? `${stats.waitingApproval} sensitive operations hold for human sign-off. Click to inspect & approve.`
-            : "All Go-Signals cleared. Operations running nominal."}
-        </p>
-
-        {/* Test High-Risk Action Button */}
-        {onTriggerTestHITL && (
-          <div className="mt-2.5 pt-2 border-t border-slate-800/60 flex items-center justify-between">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onTriggerTestHITL();
-              }}
-              className="text-[9px] text-amber-400/90 hover:text-amber-300 flex items-center gap-1 bg-amber-950/40 hover:bg-amber-950/70 px-2 py-1 rounded border border-amber-500/30 transition-all"
-            >
-              <ShieldAlert className="w-3 h-3 text-amber-400" />
-              <span>Simulate High-Risk Action (HITL Gate)</span>
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* 3. AGENT INSPECTOR & ROUTING */}
-      <div className="bg-[#050b14] border border-cyan-950 rounded-2xl p-4 shadow-xl flex-1 flex flex-col justify-between">
-        <div>
-          <div className="flex items-center justify-between border-b border-slate-800/80 pb-2 mb-3">
-            <h2 className="text-[11px] font-bold text-slate-200 uppercase tracking-wider">
-              AGENT INSPECTOR & ROUTING
-            </h2>
-            <span className="text-[10px] text-cyan-400 font-bold">
-              All Agents ({agents.length}) =
-            </span>
-          </div>
-
-          {/* Horizontal Agent Selector Chips (Alphabetical: Anthony, Arwin, Blaze, Bonnie...) */}
-          <div className="flex items-center space-x-1.5 overflow-x-auto pb-2 mb-3 scrollbar-thin">
-            {sortedAgents.map((agent) => (
-              <button
-                key={agent.id}
-                onClick={() => onSelectAgent(agent)}
-                className={`px-2 py-1 rounded text-[10px] whitespace-nowrap transition-all flex items-center gap-1 ${
-                  currentAgent?.id === agent.id
-                    ? "bg-cyan-600 text-white font-bold shadow-md shadow-cyan-600/30"
-                    : "bg-slate-900 text-slate-400 hover:text-slate-200 hover:bg-slate-800"
-                }`}
-              >
-                <span
-                  className="w-1.5 h-1.5 rounded-full"
-                  style={{ backgroundColor: agent.color }}
-                ></span>
-                <span>{agent.name}</span>
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-white/[0.07] px-4 py-3">
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+                Command Panel
+              </span>
+              <button onClick={() => setOpen(false)} className="text-slate-600 transition hover:text-slate-200">
+                <X className="h-3.5 w-3.5" />
               </button>
-            ))}
-          </div>
-
-          {/* Selected Agent Card (Matches Screenshot) */}
-          {currentAgent && (
-            <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3 mb-3">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center space-x-2.5">
-                  <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white shadow-md text-xs bg-gradient-to-br from-indigo-500 to-purple-600"
-                  >
-                    {currentAgent.name.substring(0, 2).toUpperCase()}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-bold text-sm text-slate-100">{currentAgent.name}</span>
-                      <span className="text-[9px] px-1 py-0.2 rounded bg-indigo-950 text-indigo-400 border border-indigo-800 font-mono">
-                        {currentAgent.shortRole || currentAgent.modelTier.toUpperCase()}
-                      </span>
-                    </div>
-                    <p className="text-[10px] text-slate-400">{currentAgent.role}</p>
-                  </div>
-                </div>
-
-                {pill && (
-                  <span className={`text-[10px] px-2 py-0.5 rounded border font-mono ${pill.bg}`}>
-                    {pill.label}
-                  </span>
-                )}
-              </div>
-
-              {/* Direct Individual Routing (A* Walking) Buttons */}
-              <div className="mt-3 pt-3 border-t border-slate-800/80">
-                <div className="text-[9px] text-cyan-400 font-bold tracking-wider uppercase mb-2">
-                  DIRECT INDIVIDUAL ROUTING (A* WALKING):
-                </div>
-
-                <div className="grid grid-cols-2 gap-1.5">
-                  <button
-                    onClick={() => onRouteAgent(currentAgent.id, "desk")}
-                    className="flex items-center justify-center gap-1.5 px-2 py-2 rounded bg-slate-900 hover:bg-emerald-950/60 border border-slate-800 hover:border-emerald-500/50 text-[10px] text-slate-200 hover:text-emerald-300 transition-all"
-                  >
-                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                    <span>Send to Work Desk</span>
-                  </button>
-
-                  <button
-                    onClick={() => onRouteAgent(currentAgent.id, "pantry")}
-                    className="flex items-center justify-center gap-1.5 px-2 py-2 rounded bg-slate-900 hover:bg-orange-950/60 border border-slate-800 hover:border-orange-500/50 text-[10px] text-slate-200 hover:text-orange-300 transition-all"
-                  >
-                    <span className="w-2 h-2 rounded-full bg-orange-500"></span>
-                    <span>Send to Pantry / Coffee</span>
-                  </button>
-
-                  <button
-                    onClick={() => onRouteAgent(currentAgent.id, "gym")}
-                    className="flex items-center justify-center gap-1.5 px-2 py-2 rounded bg-slate-900 hover:bg-sky-950/60 border border-slate-800 hover:border-sky-500/50 text-[10px] text-slate-200 hover:text-sky-300 transition-all"
-                  >
-                    <span className="w-2 h-2 rounded-full bg-sky-500"></span>
-                    <span>Send to Gym / Rec</span>
-                  </button>
-
-                  <button
-                    onClick={() => onRouteAgent(currentAgent.id, "brain")}
-                    className="flex items-center justify-center gap-1.5 px-2 py-2 rounded bg-slate-900 hover:bg-purple-950/60 border border-slate-800 hover:border-purple-500/50 text-[10px] text-slate-200 hover:text-purple-300 transition-all"
-                  >
-                    <span className="w-2 h-2 rounded-full bg-purple-500"></span>
-                    <span>Call to Brain (Scrum)</span>
-                  </button>
-                </div>
-              </div>
             </div>
-          )}
-        </div>
 
-        {/* Current Task Status */}
-        {currentAgent && (
-          <div className="mt-2 text-[10px] bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
-            <span className="text-slate-500 uppercase font-bold">CURRENT TASK:</span>{" "}
-            <span className="text-slate-200">{currentAgent.currentTask}</span>
-          </div>
+            {/* ── LIVE COUNTER ─────────────────────────────── */}
+            <section className="border-b border-white/[0.06] px-4 py-4">
+              <div className="flex items-center justify-between">
+                <span className="text-[9px] font-semibold uppercase tracking-widest text-slate-500">
+                  Campus live counter
+                </span>
+                <span className="flex items-center gap-1 text-[10px] font-semibold text-lime-300">
+                  <span className="live-dot h-1.5 w-1.5 rounded-full bg-lime-400" />
+                  {stats.total} online
+                </span>
+              </div>
+
+              <div className="mt-3 space-y-2">
+                {STAT_ROWS.map(({ key, label, color: dot }) => {
+                  const val     = statVal(key);
+                  const changed = val !== (prevStats as any)[key];
+                  return (
+                    <motion.div
+                      key={key}
+                      className="flex items-center justify-between text-xs"
+                      animate={changed ? { backgroundColor: ["rgba(255,255,255,0.05)", "transparent"] } : {}}
+                      transition={{ duration: 0.8 }}
+                    >
+                      <span className="flex items-center gap-2 text-slate-400">
+                        <span className="h-1.5 w-1.5 rounded-full" style={{ background: dot }} />
+                        {label}
+                      </span>
+                      <motion.span
+                        key={val}
+                        initial={{ scale: changed ? 1.4 : 1, color: changed ? "#ffffff" : "#cbd5e1" }}
+                        animate={{ scale: 1, color: "#cbd5e1" }}
+                        transition={{ duration: 0.5 }}
+                        className="font-semibold tabular-nums text-slate-300"
+                      >
+                        {val}
+                      </motion.span>
+                    </motion.div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-3 grid grid-cols-2 gap-2 border-t border-white/[0.06] pt-3">
+                <div className="rounded-lg bg-white/[0.03] p-2.5">
+                  <p className="text-[9px] text-slate-500">Open tasks</p>
+                  <p className="mt-0.5 text-sm font-semibold tabular-nums text-slate-100">{stats.openTasks}</p>
+                </div>
+                <div className="rounded-lg bg-white/[0.03] p-2.5">
+                  <p className="text-[9px] text-slate-500">Accessories</p>
+                  <p className="mt-0.5 text-sm font-semibold tabular-nums text-slate-100">{stats.accessories}</p>
+                </div>
+              </div>
+            </section>
+
+            {/* ── BOSS DESK / HITL ─────────────────────────── */}
+            <section className="border-b border-white/[0.06] px-4 py-4">
+              <button
+                onClick={onOpenApprovals}
+                className="group w-full rounded-xl border border-amber-400/15 bg-amber-400/[0.05] p-3 text-left transition hover:border-amber-400/30 hover:bg-amber-400/[0.09]"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 text-[10px] font-semibold text-amber-200">
+                    <ShieldAlert className="h-3.5 w-3.5 text-amber-300" />
+                    The Boss Desk // Approvals
+                  </span>
+                  <AnimatePresence mode="wait">
+                    <motion.span
+                      key={stats.waitingApproval}
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${
+                        stats.waitingApproval
+                          ? "bg-rose-500/20 text-rose-200 ring-1 ring-rose-500/40"
+                          : "bg-white/[0.05] text-slate-500"
+                      }`}
+                    >
+                      {stats.waitingApproval} pending
+                    </motion.span>
+                  </AnimatePresence>
+                </div>
+                <p className="mt-1.5 text-[11px] leading-relaxed text-slate-400">
+                  {stats.waitingApproval
+                    ? "Sensitive operations paused for sign-off."
+                    : "All go-signals cleared. Operations nominal."}
+                </p>
+                <div className="mt-2 flex items-center gap-1 text-[10px] font-medium text-slate-400 transition group-hover:text-slate-200">
+                  Review queue <ArrowRight className="h-3 w-3" />
+                </div>
+              </button>
+
+              {onTriggerTestHITL && (
+                <button
+                  onClick={onTriggerTestHITL}
+                  className="mt-2 text-[9px] text-slate-600 transition hover:text-amber-300"
+                >
+                  <ShieldAlert className="mr-0.5 inline h-3 w-3" />
+                  Simulate approval request
+                </button>
+              )}
+            </section>
+
+            {/* ── AGENT INSPECTOR & ROUTING ────────────────── */}
+            <section className="flex flex-1 flex-col px-4 py-4">
+              <div className="flex items-center justify-between">
+                <span className="text-[9px] font-semibold uppercase tracking-widest text-slate-500">
+                  Agent inspector & routing
+                </span>
+                <span className="text-[9px] text-slate-600">
+                  {agents.length} total
+                </span>
+              </div>
+
+              {/* Chip grid */}
+              <div className="mt-3 flex flex-wrap gap-1">
+                {sorted.map((a) => {
+                  const active = agent?.id === a.id;
+                  return (
+                    <motion.button
+                      key={a.id}
+                      onClick={() => onSelectAgent(a)}
+                      whileTap={{ scale: 0.92 }}
+                      className={`flex items-center gap-1 rounded-md border px-2 py-1 text-[10px] font-medium transition ${
+                        active
+                          ? "border-sky-400/40 bg-sky-400/10 text-sky-200"
+                          : "border-white/[0.07] bg-white/[0.025] text-slate-400 hover:border-white/20 hover:text-slate-100"
+                      }`}
+                    >
+                      <span className="h-1.5 w-1.5 rounded-full" style={{ background: a.color }} />
+                      {a.name}
+                    </motion.button>
+                  );
+                })}
+              </div>
+
+              {/* Selected agent card */}
+              <AnimatePresence mode="wait">
+                {agent && (
+                  <motion.div
+                    key={agent.id}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{   opacity: 0, y: -4 }}
+                    transition={{ duration: 0.2 }}
+                    className="mt-4 rounded-xl border border-white/[0.07] bg-[#0b1017] p-3"
+                  >
+                    <div className="flex items-start gap-3">
+                      {/* Avatar */}
+                      <div
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xs font-bold"
+                        style={{ background: `${color}1a`, border: `1px solid ${color}44`, color }}
+                      >
+                        {agent.name.slice(0, 2).toUpperCase()}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-1">
+                          <p className="truncate text-sm font-semibold text-slate-100">{agent.name}</p>
+                          <span
+                            className="shrink-0 rounded-full px-2 py-0.5 text-[9px] font-semibold"
+                            style={{ background: `${color}1a`, color, border: `1px solid ${color}44` }}
+                          >
+                            {STATUS_LABEL[agent.status] ?? agent.status}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 truncate text-[11px] text-slate-500">
+                          {agent.shortRole || agent.role}
+                        </p>
+                      </div>
+                    </div>
+
+                    <p className="mt-3 border-t border-white/[0.06] pt-2.5 text-[11px] leading-relaxed text-slate-400">
+                      <span className="text-slate-600">Task · </span>
+                      {agent.currentTask || "No active task"}
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Routing buttons */}
+              {agent && (
+                <>
+                  <p className="mb-2 mt-4 text-[9px] font-semibold uppercase tracking-widest text-slate-500">
+                    Direct routing (A* walk)
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(
+                      [
+                        ["desk",   "Work desk",   "#bef264"],
+                        ["pantry", "Pantry",       "#fb923c"],
+                        ["gym",    "Rec & gym",    "#38bdf8"],
+                        ["brain",  "Team meeting", "#a78bfa"],
+                      ] as [RoutingDestination, string, string][]
+                    ).map(([dest, label, dot]) => (
+                      <motion.button
+                        key={dest}
+                        whileTap={{ scale: 0.94 }}
+                        onClick={() => onRouteAgent(agent.id, dest)}
+                        className="flex items-center gap-2 rounded-lg border border-white/[0.07] bg-white/[0.025] px-2.5 py-2 text-left text-[11px] font-medium text-slate-300 transition hover:border-white/20 hover:bg-white/[0.06] hover:text-white"
+                      >
+                        <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: dot }} />
+                        {label}
+                      </motion.button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </section>
+          </motion.aside>
         )}
-      </div>
-    </aside>
+      </AnimatePresence>
+    </>
   );
 };
