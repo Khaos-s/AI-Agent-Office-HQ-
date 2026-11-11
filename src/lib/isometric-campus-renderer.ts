@@ -295,24 +295,24 @@ export function renderIsometricCampus(
 }
 
 function drawExteriorLawnAndRoad(ctx: CanvasRenderingContext2D, tick: number): void {
-  // Dark lush teal lawn
+  // Dark lush teal lawn covering entire canvas
   ctx.fillStyle = "#022c22";
-  ctx.fillRect(-300, -300, CAMPUS_WIDTH + 600, CAMPUS_HEIGHT + 600);
+  ctx.fillRect(-2000, -2000, 6000, 6000);
 
   // Subtle grid texture on ground
   ctx.strokeStyle = "rgba(4, 120, 87, 0.12)";
   ctx.lineWidth = 1;
   const gridSize = 30;
-  for (let x = -300; x < CAMPUS_WIDTH + 300; x += gridSize) {
+  for (let x = -2000; x < 4000; x += gridSize) {
     ctx.beginPath();
-    ctx.moveTo(x, -300);
-    ctx.lineTo(x, CAMPUS_HEIGHT + 300);
+    ctx.moveTo(x, -2000);
+    ctx.lineTo(x, 4000);
     ctx.stroke();
   }
-  for (let y = -300; y < CAMPUS_HEIGHT + 300; y += gridSize) {
+  for (let y = -2000; y < 4000; y += gridSize) {
     ctx.beginPath();
-    ctx.moveTo(-300, y);
-    ctx.lineTo(CAMPUS_WIDTH + 300, y);
+    ctx.moveTo(-2000, y);
+    ctx.lineTo(4000, y);
     ctx.stroke();
   }
 
